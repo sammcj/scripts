@@ -5,6 +5,7 @@
 #
 # Examples:
 # redmine_job Systems 12345 "echo Hello World"
+# at 19:00 redmine_job Systems 12345 "echo Hello World"
 
 if [ $# -lt 3 ]
   then
