@@ -1,32 +1,45 @@
--- Rewrites an entire database a replaces the character code specified
+-- Reports on characters that aren't UTF8 across the public schema / database
 
--- Author: Sam McLeod & Ross Williamson 01/10/2015
+-- Author: Sam McLeod 01/10/2015
 
--- By default it looks for non-utf8 bytecode x09 (a weird tab thing) and replaces
--- it with two spaces.
+-- Example usage: select * from search_columns('xe9');
 
--- This is highly inefficient.
+-- Exmaple output:
+-- my_db=# select * from search_columns('xe9');
+--  schemaname |        tablename        |    columnname    |  rowctid
+-- ------------+-------------------------+------------------+------------
+--  public     | tbl_bi_objects_log      | definition_xml   | (0,1)
+--  public     | tblfund_transaction_log | payee            | (95,32)
+--  public     | tblmessages             | message          | (0,5)
+--  public     | tblpagecache            | content          | (0,1)
 
-DO
-$$
-DECLARE
-rw record;
-BEGIN
-SET session_replication_role = replica; -- disable triggers
-FOR rw IN
-    SELECT 'UPDATE '||C.table_name||'  SET '||C.column_name||' = REPLACE ('||C.COLUMN_NAME||',convert_from(BYTEA ''\x09'', ''LATIN1''),''  ''); ' QRY
-    FROM (SELECT column_name,table_name
-          FROM   information_schema.columns
-          WHERE  table_schema='public'
-          AND    (data_type ='text' OR data_type ='character varying')
-          AND    table_name in (SELECT table_name
-                                FROM   information_schema.tables
-                                WHERE  table_schema='public'
-                                AND    table_type ='BASE TABLE'))c
-
-LOOP
-    EXECUTE rw.QRY;
-END LOOP;
-SET session_replication_role = DEFAULT; -- enable triggers
+CREATE OR REPLACE FUNCTION search_columns(
+    needle text,
+    haystack_tables name[] default '{}',
+    haystack_schema name[] default '{public}'
+)
+RETURNS table(schemaname text, tablename text, columnname text, rowctid text)
+AS $$
+begin
+  FOR schemaname,tablename,columnname IN
+      SELECT c.table_schema,c.table_name,c.column_name
+      FROM information_schema.columns c
+      JOIN information_schema.tables t ON
+        (t.table_name=c.table_name AND t.table_schema=c.table_schema)
+      WHERE (c.table_name=ANY(haystack_tables) OR haystack_tables='{}')
+        AND c.table_schema=ANY(haystack_schema)
+        AND t.table_type='BASE TABLE'
+  LOOP
+    -- EXECUTE format('SELECT ctid FROM %I.%I WHERE cast(%I as text)=%L',
+    EXECUTE format('SELECT ctid FROM %I.%I WHERE cast(%I as text) LIKE ''%%'' || convert_from(BYTEA ''\x09'', ''LATIN1'') || ''%%''',
+       schemaname,
+       tablename,
+       columnname,
+       needle
+    ) INTO rowctid;
+    IF rowctid is not null THEN
+      RETURN NEXT;
+    END IF;
+ END LOOP;
 END;
-$$;
+$$ language plpgsql;
