@@ -24,7 +24,7 @@
 # ~/rpmbuild/RPMS/x86_64/pacemaker-debuginfo-<version>.rpm
 
 # Build requirements
-yum install -y rpm-devel rpm-build pacemaker-libs pacemaker-cluster-libs pacemaker-cli resource-agents make
+yum install -y rpm-devel rpm-build pacemaker-libs pacemaker-cluster-libs pacemaker-cli resource-agents make yum-utils
 
 # Get the latest pacemaker source package
 yumdownloader --source pacemaker
