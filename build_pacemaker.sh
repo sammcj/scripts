@@ -31,7 +31,7 @@ yumdownloader --source pacemaker
 
 # Build from source enabling stonithd legacy plugins
 cd ~/rpmbuild/SPECS || exit
-rpmbuild -ba --with stonithd pacemaker.spec
+rpmbuild -bb --with stonithd pacemaker.spec
 
 # Passing push when calling the script will push packages to packagecloud.io
 # Requires ~/.packagecloud containing your authentication token
