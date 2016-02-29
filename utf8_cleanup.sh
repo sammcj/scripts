@@ -16,4 +16,4 @@ iconv -f UTF-8 -t ISO-8859-1//IGNORE --output="utf8_$1" "$1_file_no_binary.sql"
 file "utf8_$1"
 
 # Import the database
-echo "You may now restore the database with something like pg_drop $1 && createdb $1 -E utf8 && psql -d $1 < "utf8_$1"
+echo "You may now restore the database with something like pg_drop $1 && createdb $1 -E utf8 && psql -d $1 < utf8_$1"
