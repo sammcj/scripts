@@ -4,6 +4,10 @@
 # Mount the installer image
 hdiutil attach /Applications/Install\ OS\ X\ El\ Capitan.app/Contents/SharedSupport/InstallESD.dmg -noverify -nobrowse -mountpoint /Volumes/install_app
 
+# Pre cleanup
+rm -rf /tmp/ElCapitan*
+umount /Volumes/OS\ X\ Base\ System*
+
 # Create the ElCapitan Blank ISO Image of 7316mb with a Single Partition - Apple Partition Map
 hdiutil create -o /tmp/ElCapitan.cdr -size 7316m -layout SPUD -fs HFS+J
 
@@ -14,7 +18,7 @@ hdiutil attach /tmp/ElCapitan.cdr.dmg -noverify -nobrowse -mountpoint /Volumes/i
 asr restore -source /Volumes/install_app/BaseSystem.dmg -target /Volumes/install_build -noprompt -noverify -erase
 
 # Remove Package link and replace with actual files
-rm /Volumes/OS\ X\ Base\ System/System/Installation/Packages
+rm -rf /Volumes/OS\ X\ Base\ System/System/Installation/Packages
 cp -rp /Volumes/install_app/Packages /Volumes/OS\ X\ Base\ System/System/Installation/
 
 # Copy El Capitan installer dependencies
@@ -31,4 +35,7 @@ hdiutil detach /Volumes/OS\ X\ Base\ System/
 hdiutil convert /tmp/ElCapitan.cdr.dmg -format UDTO -o /tmp/ElCapitan.iso
 
 # Rename the ElCapitan ISO Image and move it to the desktop
-mv /tmp/ElCapitan.iso.cdr ~/Desktop/ElCapitan.iso
+mv /tmp/ElCapitan.iso.cdr ~/Desktop/ElCapitan_with_updates.iso
+
+# Post cleanup
+rm -rf /tmp/ElCapitan*
