@@ -2,35 +2,41 @@
 
 0_package_control_loader
 AdvancedNewFile
-AlignTab
 Alignment
+AlignTab
 All Autocomplete
 Ansible
 ApplySyntax
 AutoFileName
+backrefs
 Better RSpec
 Bind Zone files
 BoundKeys
 BracketHighlighter
+bz2
 ChannelRepositoryTools
 ColorSchemeSelector
 DashDoc
 DocBlockr
+Docker Based Build Systems
 Dockerfile Syntax Highlighting
 Dotfiles Syntax Highlighting
-ERB Autocomplete
 EditorConfig
 Elixir
+ElixirSublime
+EncodingHelper
+ERB Autocomplete
 Evernote
 FileBrowser
 FileDiffs
 FileSystem Autocompletion
 Focus File on Sidebar
+Git
 Git Commit Message Syntax
 Git Config
-Git
 GitGutter
 Google Search
+Highlight
 Highlight Build Errors
 Homebrew-formula-syntax
 How Do I Code Search
@@ -41,30 +47,42 @@ Junos
 Keymap Redefiner
 Keymaps
 LaTeXing
-LogView
 Logstash Syntax Highlighting
+LogView
 MacDown App Menu
 Makefile Improved
 MarkdownCodeBlockWrapper
 MarkdownEditing
 MarkdownTOC
+markupsafe
 Material Theme
 MaxPane
+mdpopups
 Missing Palette Commands
 More Layouts
+nginx
 Non Text Files
 Normalize Indentation
+oauthlib
 Open in Default Application
 Package Control
 Pandoc
 Path Translator
-PostgreSQL Syntax Highlighting
+plist
 Postgres PL pgSQL
+PostgreSQL Syntax Highlighting
 Pretty Ruby
+Pretty YAML
 ProductiveSnippetsRuby
 Puppet
+pygments
+python-jinja2
+python-markdown
+requests
+requests-oauthlib
 RPM Spec Syntax
 RSpec
+rspec-snippets
 RuboCop
 Sass
 ScopeHunter
@@ -74,6 +92,7 @@ SideBarGit
 SortBy
 SqlBeautifier
 SublimeERB
+SublimeLinter
 SublimeLinter-annotations
 SublimeLinter-contrib-puppet-lint
 SublimeLinter-json
@@ -81,40 +100,21 @@ SublimeLinter-pyyaml
 SublimeLinter-ruby
 SublimeLinter-shellcheck
 Sublimerge Pro
+Sublimerge Pro
 SyncedSideBar
 SyntaxManager
 Table Cleaner
 Table Editor
+tabulate
+Terminal
 Terraform
 Theme - Afterglow
+Theme - Default
 Theme - Hero
+Theme-Switcher
 Themes Menu Switcher
 Themr
 Todo
+TodoReview
 ToggleQuotes
 TrailingSpaces
-nginx
-plist
-rspec-snippets
-Docker Based Build Systems
-ElixirSublime
-EncodingHelper
-Highlight
-Pretty YAML
-SublimeLinter
-Sublimerge Pro
-Terminal
-Theme - Default
-Theme-Switcher
-TodoReview
-backrefs
-bz2
-markupsafe
-mdpopups
-oauthlib
-pygments
-python-jinja2
-python-markdown
-requests
-requests-oauthlib
-tabulate
