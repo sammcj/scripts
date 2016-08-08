@@ -1,0 +1,120 @@
+# 2016-08-08
+
+0_package_control_loader
+AdvancedNewFile
+AlignTab
+Alignment
+All Autocomplete
+Ansible
+ApplySyntax
+AutoFileName
+Better RSpec
+Bind Zone files
+BoundKeys
+BracketHighlighter
+ChannelRepositoryTools
+ColorSchemeSelector
+DashDoc
+DocBlockr
+Dockerfile Syntax Highlighting
+Dotfiles Syntax Highlighting
+ERB Autocomplete
+EditorConfig
+Elixir
+Evernote
+FileBrowser
+FileDiffs
+FileSystem Autocompletion
+Focus File on Sidebar
+Git Commit Message Syntax
+Git Config
+Git
+GitGutter
+Google Search
+Highlight Build Errors
+Homebrew-formula-syntax
+How Do I Code Search
+INI
+Jekyll
+Jinja2
+Junos
+Keymap Redefiner
+Keymaps
+LaTeXing
+LogView
+Logstash Syntax Highlighting
+MacDown App Menu
+Makefile Improved
+MarkdownCodeBlockWrapper
+MarkdownEditing
+MarkdownTOC
+Material Theme
+MaxPane
+Missing Palette Commands
+More Layouts
+Non Text Files
+Normalize Indentation
+Open in Default Application
+Package Control
+Pandoc
+Path Translator
+PostgreSQL Syntax Highlighting
+Postgres PL pgSQL
+Pretty Ruby
+ProductiveSnippetsRuby
+Puppet
+RPM Spec Syntax
+RSpec
+RuboCop
+Sass
+ScopeHunter
+Shell Exec
+SideBarEnhancements
+SideBarGit
+SortBy
+SqlBeautifier
+SublimeERB
+SublimeLinter-annotations
+SublimeLinter-contrib-puppet-lint
+SublimeLinter-json
+SublimeLinter-pyyaml
+SublimeLinter-ruby
+SublimeLinter-shellcheck
+Sublimerge Pro
+SyncedSideBar
+SyntaxManager
+Table Cleaner
+Table Editor
+Terraform
+Theme - Afterglow
+Theme - Hero
+Themes Menu Switcher
+Themr
+Todo
+ToggleQuotes
+TrailingSpaces
+nginx
+plist
+rspec-snippets
+Docker Based Build Systems
+ElixirSublime
+EncodingHelper
+Highlight
+Pretty YAML
+SublimeLinter
+Sublimerge Pro
+Terminal
+Theme - Default
+Theme-Switcher
+TodoReview
+backrefs
+bz2
+markupsafe
+mdpopups
+oauthlib
+pygments
+python-jinja2
+python-markdown
+requests
+requests-oauthlib
+tabulate
