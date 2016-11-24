@@ -4,16 +4,15 @@
 # Sends the output of a command to a Redmine ticket
 #
 # Examples:
-# redminejob Systems 12345 "echo Hello World"
-# at 19:00 redminejob Systems 12345 "echo Hello World"
+# redmine_job Systems 12345 "echo Hello World"
 
 if [ $# -lt 3 ]
   then
-    echo "Usage: redminejob <project> <task number> \"<command>\""
+    echo "Usage: redmine_job <project> <task number> \"<command>\""
     exit 1
 fi
 
-REDMINE_EMAIL="your_redmine_email@something.com"
+REDMINE_EMAIL="example@example.com"
 PROJECT=$1
 TASK=$2
 COMMAND=$3

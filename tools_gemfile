@@ -1,0 +1,33 @@
+# These are gems that can be useful when writing
+# and testing puppet code, to install run:
+# gem install -g tools_gemfile --no-document
+
+source 'http://rubygems.org'
+
+gem 'puppet-lint'
+gem 'puppet-retrospec'
+gem 'retrospec'
+gem 'onceover'
+gem 'puppet-syntax'
+gem 'rspec-puppet'
+gem 'rspec-puppet-facts'
+gem 'rspec-puppet-utils'
+gem 'rubocop'
+gem 'semantic_puppet'
+gem 'jsonlint'
+gem 'generate-puppetfile'
+gem 'puppet-lint-empty_string-check'
+gem 'puppet-lint-roles_and_profiles-check'
+gem 'puppet-lint-unquoted_string-check'
+gem 'puppet-lint-world_writable_files-check'
+gem 'puppet_forge'
+gem 'puppetlabs_spec_helper'
+gem 'hiera-puppet-helper'
+gem 'hiera-eyaml'
+gem 'hiera'
+gem 'puppet'
+gem 'json'
+gem 'puppet-ghostbuster'
+gem 'rspec'
+gem 'serverspec'
+gem 'sqlite3'
