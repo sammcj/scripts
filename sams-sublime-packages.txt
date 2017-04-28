@@ -1,120 +1,97 @@
-# 2016-08-08
+# 28-04-2017
 
 0_package_control_loader
+A File Icon
 AdvancedNewFile
-Alignment
 AlignTab
-All Autocomplete
-Ansible
+Alignment
 ApplySyntax
 AutoFileName
-backrefs
-Better RSpec
 Bind Zone files
 BoundKeys
-BracketHighlighter
-bz2
 ChannelRepositoryTools
-ColorSchemeSelector
+Colorcoder
 DashDoc
+DeleteBlankLines
 DocBlockr
-Docker Based Build Systems
 Dockerfile Syntax Highlighting
-Dotfiles Syntax Highlighting
-EditorConfig
-Elixir
-ElixirSublime
-EncodingHelper
 ERB Autocomplete
-Evernote
-FileBrowser
+ERB Snippets
+EditorConfig
+Enki Theme
 FileDiffs
-FileSystem Autocompletion
-Focus File on Sidebar
-Git
+Fix Mac Path
+Generic Config
+GhostText
 Git Commit Message Syntax
-Git Config
+Git
 GitGutter
-Google Search
-Highlight
-Highlight Build Errors
+GitHub Markdown Snippets
 Homebrew-formula-syntax
-How Do I Code Search
 INI
+JSONLint
 Jekyll
 Jinja2
 Junos
-Keymap Redefiner
 Keymaps
 LaTeXing
-Logstash Syntax Highlighting
+Log Highlight
 LogView
 MacDown App Menu
-Makefile Improved
+Markdown Table Formatter
 MarkdownCodeBlockWrapper
-MarkdownEditing
+MarkdownLight
 MarkdownTOC
-markupsafe
-Material Theme
-MaxPane
-mdpopups
-Missing Palette Commands
-More Layouts
-nginx
-Non Text Files
 Normalize Indentation
-oauthlib
 Open in Default Application
 Package Control
 Pandoc
 Path Translator
-plist
-Postgres PL pgSQL
+Plist Binary
 PostgreSQL Syntax Highlighting
+Postgres PL pgSQL
 Pretty Ruby
-Pretty YAML
+ProductiveSnippetsERB
 ProductiveSnippetsRuby
 Puppet
-pygments
-python-jinja2
-python-markdown
-requests
-requests-oauthlib
+Python 3
 RPM Spec Syntax
 RSpec
-rspec-snippets
 RuboCop
+Ruby Completions
+Rubycritic
 Sass
-ScopeHunter
+SearchPanelEnhanced
 Shell Exec
 SideBarEnhancements
-SideBarGit
 SortBy
-SqlBeautifier
+StatusMessage
 SublimeERB
-SublimeLinter
 SublimeLinter-annotations
+SublimeLinter-contrib-elixirc
 SublimeLinter-contrib-puppet-lint
-SublimeLinter-json
+SublimeLinter-php
 SublimeLinter-pyyaml
 SublimeLinter-ruby
 SublimeLinter-shellcheck
+SublimeLinter-xmllint
 Sublimerge Pro
-Sublimerge Pro
+Sync Settings
 SyncedSideBar
+SyncedSidebarBg
+SyntaxHighlightTools
 SyntaxManager
+SysLog
 Table Cleaner
 Table Editor
-tabulate
-Terminal
-Terraform
-Theme - Afterglow
-Theme - Default
-Theme - Hero
-Theme-Switcher
+TabsToTable
+ThemeTweaker
 Themes Menu Switcher
-Themr
 Todo
-TodoReview
+Todo.txt Syntax
 ToggleQuotes
+ToggleSettings
 TrailingSpaces
+YAML Nav
+nginx
+plist
