@@ -1,0 +1,52 @@
+{
+	"additional_path_items":
+	[
+		"/usr/local/bin",
+		"/usr/bin"
+	],
+	"always_show_minimap_viewport": true,
+	"bold_folder_labels": false,
+	"color_scheme": "Packages/Colorcoder/Enki-Aster (Colorcoded).tmTheme",
+	"dictionary": "Packages/Language - English/en_GB.dic",
+	"drag_text": false,
+	"enki_theme_accent_red": true,
+	"enki_theme_compact_panel": true,
+	"enki_theme_compact_sidebar": true,
+	"enki_theme_panel_separator": true,
+	"enki_theme_small_statusbar": true,
+	"enki_theme_small_tab": true,
+	"enki_theme_tabs_autowidth": true,
+	"enki_theme_tree_headings": true,
+	"font_face": "source code pro",
+	"font_options":
+	[
+		"gray_antialias",
+		"subpixel_antialias"
+	],
+	"font_size": 12,
+	"highlight_line": true,
+	"ignored_packages":
+	[
+		"Markdown",
+		"Vintage"
+	],
+	"indent_guide_options":
+	[
+		"draw_normal",
+		"draw_active"
+	],
+	"indent_to_bracket": true,
+	"line_padding_bottom": 2,
+	"line_padding_top": 2,
+	"margin": 2,
+	"original_color_scheme": "Packages/Enki Theme/scheme/Enki-Aster-red.tmTheme",
+	"overlay_scroll_bars": "enabled",
+	"shell_exec_executable": "/usr/local/bin/zsh",
+	"shell_exec_executable_option": "--login",
+	"show_encoding": true,
+	"status_bar_brighter": true,
+	"tab_size": 2,
+	"tabs_small": true,
+	"theme": "Enki-Theme.sublime-theme",
+	"translate_tabs_to_spaces": true
+}
