@@ -13,6 +13,7 @@ print_help ()
   printf "\t%s\n" "stop: stops all volumes in pool"
   printf "\t%s\n" "get <option name>: gets volume options for all volumes in pool"
   printf "\t%s\n" "set <option name> <option value>: sets volume option for all volumes in pool"
+  printf "\t%s\n" "heal: starts a manual heal across all volumes in pool"
 }
 
 parse_commandline ()
@@ -40,6 +41,12 @@ parse_commandline ()
       while read -r line; do
           echo "Setting $2 $3 on volume $line ..."
           gluster volume set $line "$2" "$3"
+      done <<< "$ALL_GLUSTER_VOLUMES"
+      ;;
+    heal)
+      while read -r line; do
+          echo "Issuing manual heal on volume $line ..."
+          gluster volume heal $line
       done <<< "$ALL_GLUSTER_VOLUMES"
       ;;
     ""|*)
