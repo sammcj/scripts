@@ -1,97 +1,121 @@
-# 28-04-2017
+# 03/11/2017
 
-0_package_control_loader
-A File Icon
-AdvancedNewFile
-AlignTab
-Alignment
-ApplySyntax
-AutoFileName
-Bind Zone files
-BoundKeys
-ChannelRepositoryTools
-Colorcoder
-DashDoc
-DeleteBlankLines
-DocBlockr
-Dockerfile Syntax Highlighting
-ERB Autocomplete
-ERB Snippets
-EditorConfig
-Enki Theme
-FileDiffs
-Fix Mac Path
-Generic Config
-GhostText
-Git Commit Message Syntax
-Git
-GitGutter
-GitHub Markdown Snippets
-Homebrew-formula-syntax
-INI
-JSONLint
-Jekyll
-Jinja2
-Junos
-Keymaps
-LaTeXing
-Log Highlight
-LogView
-MacDown App Menu
-Markdown Table Formatter
-MarkdownCodeBlockWrapper
-MarkdownLight
-MarkdownTOC
-Normalize Indentation
-Open in Default Application
-Package Control
-Pandoc
-Path Translator
-Plist Binary
-PostgreSQL Syntax Highlighting
-Postgres PL pgSQL
-Pretty Ruby
-ProductiveSnippetsERB
-ProductiveSnippetsRuby
-Puppet
-Python 3
-RPM Spec Syntax
-RSpec
-RuboCop
-Ruby Completions
-Rubycritic
-Sass
-SearchPanelEnhanced
-Shell Exec
-SideBarEnhancements
-SortBy
-StatusMessage
-SublimeERB
-SublimeLinter-annotations
-SublimeLinter-contrib-elixirc
-SublimeLinter-contrib-puppet-lint
-SublimeLinter-php
-SublimeLinter-pyyaml
-SublimeLinter-ruby
-SublimeLinter-shellcheck
-SublimeLinter-xmllint
-Sublimerge Pro
-Sync Settings
-SyncedSideBar
-SyncedSidebarBg
-SyntaxHighlightTools
-SyntaxManager
-SysLog
-Table Cleaner
-Table Editor
-TabsToTable
-ThemeTweaker
-Themes Menu Switcher
-Todo
-Todo.txt Syntax
-ToggleQuotes
-ToggleSettings
-TrailingSpaces
-YAML Nav
-nginx
-plist
+{
+	"installed_packages":
+	[
+		"A File Icon",
+		"AdvancedNewFile",
+		"Align Arguments",
+		"Alignment",
+		"AlignTab",
+		"ApplySyntax",
+		"AutoAligner",
+		"AutoFileName",
+		"BeautifyRuby",
+		"Bind Zone files",
+		"BoundKeys",
+		"ChannelRepositoryTools",
+		"Colorcoder",
+		"ConvertToUTF8",
+		"DashDoc",
+		"DeleteBlankLines",
+		"DiffTabs",
+		"Docker Based Build Systems",
+		"Dockerfile Syntax Highlighting",
+		"Edge Theme",
+		"ElixirSublime",
+		"Enki Theme",
+		"ERB Autocomplete",
+		"ERB Snippets",
+		"FileDiffs",
+		"Fix Mac Path",
+		"Folder2Project",
+		"FontCycler",
+		"Generic Config",
+		"GhostText",
+		"Git",
+		"Git Commit Message Syntax",
+		"Git Config",
+		"GitGutter",
+		"GitOpenChangedFiles",
+		"Highlight",
+		"Homebrew-formula-syntax",
+		"Incomprehensible Ex",
+		"INI",
+		"Javascript Beautify",
+		"Jedi - Python autocompletion",
+		"Jekyll",
+		"Jinja2",
+		"JSONLint",
+		"Junos",
+		"Keymaps",
+		"LaTeXing",
+		"Log Highlight",
+		"Logstash Syntax Highlighting",
+		"LogView",
+		"MacDown App Menu",
+		"MagicPython",
+		"Markdown Table Formatter",
+		"MarkdownCodeBlockWrapper",
+		"MarkdownTOC",
+		"nginx",
+		"Normalize Indentation",
+		"Open in Default Application",
+		"Package Control",
+		"Pandoc",
+		"Path Translator",
+		"PgSQL",
+		"plist",
+		"Plist Binary",
+		"Postgres PL pgSQL",
+		"PostgreSQL Syntax Highlighting",
+		"Pretty Ruby",
+		"Pretty YAML",
+		"ProductiveSnippetsERB",
+		"ProductiveSnippetsRuby",
+		"Puppet",
+		"Python 3",
+		"RPM Spec Syntax",
+		"RSpec",
+		"RuboCop",
+		"Ruby Completions",
+		"Rubycritic",
+		"Sass",
+		"Search in Project",
+		"SearchPanelEnhanced",
+		"Shell Exec",
+		"SideBarEnhancements",
+		"SortBy",
+		"StatusMessage",
+		"StGitlab",
+		"Sublime Tutor",
+		"SublimeERB",
+		"SublimeLinter",
+		"SublimeLinter-annotations",
+		"SublimeLinter-contrib-elixirc",
+		"SublimeLinter-contrib-puppet-lint",
+		"SublimeLinter-php",
+		"SublimeLinter-pyyaml",
+		"SublimeLinter-ruby",
+		"SublimeLinter-shellcheck",
+		"SublimeLinter-xmllint",
+		"Sublimerge Pro",
+		"Sync Settings",
+		"SyncedSideBar",
+		"SyncedSidebarBg",
+		"SyntaxHighlightTools",
+		"SysLog",
+		"Table Cleaner",
+		"Table Editor",
+		"TabsToTable",
+		"Terminal",
+		"Themes Menu Switcher",
+		"ThemeTweaker",
+		"Todo",
+		"Todo.txt Syntax",
+		"TodoReview",
+		"ToggleQuotes",
+		"ToggleSettings",
+		"TrailingSpaces"
+	]
+}
