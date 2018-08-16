@@ -1,3 +1,4 @@
+#  (for i in -u -r -q "-I SUM" -c -w -W -b; do LC_TIME="en_US.UTF-8" sar -s 10:00:00 -e 18:00:01 -f /var/log/sysstat/sa18 $i| tail -n +4 | head -n -1; echo "==========="; sleep 1; done) | awk -f report.awk
 BEGIN{
 round=0
 count=0
