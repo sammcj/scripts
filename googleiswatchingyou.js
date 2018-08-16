@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GoogleIsWatchingYou
 // @namespace    https://openuserjs.org/users/sammcj
-// @version      0.2
+// @version      0.3
 // @description  Warns with a pop-up if signed into Google / YouTube
 // @author       Sam McLeod
 // @twitter      https://twitter.com/s_mcleod
@@ -9,6 +9,7 @@
 // @license      MIT
 // @include     /^https?://www\.google\.com.*/.*$/
 // @include     /^https?://www\.youtube\.com.*/.*$/
+// @exclude     /^https?://www.google.com/recaptcha/.*
 // @grant        metadata
 // ==/UserScript==
 
