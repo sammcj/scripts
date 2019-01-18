@@ -72,4 +72,6 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# Misc
 
+port_check_pallet.py

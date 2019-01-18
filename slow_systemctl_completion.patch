@@ -1,0 +1,24 @@
+22c22
+<         systemctl $mode --full --no-legend "$@"
+---
+>         systemctl $mode --full --no-legend --no-pager "$@"
+44a45,48
+>
+> #
+> # UHU PATCH Tue Mar 14 18:50:31 CET 2017 {
+> #
+46,49c50,53
+<             <(__systemctl $mode show --property "$property" -- "${units[@]}")
+<         for ((i=0; $i < ${#units[*]}; i++)); do
+<                 if [[ "${props[i]}" = "$property=$value" ]]; then
+<                         echo " ${units[i]}"
+---
+>             <(__systemctl $mode show --property Names,"$property" -- \*)
+>         for ((i=0; $i < ${#props[*]}; i=i+2)); do
+>                 if [[ "${props[i+1]}" = "$property=$value" ]]; then
+>                         echo " ${props[i]#Names=}"
+51a56,59
+> #
+> # } UHU PATCH Tue Mar 14 18:50:31 CET 2017
+> #
+>
