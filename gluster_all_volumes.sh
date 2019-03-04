@@ -16,6 +16,7 @@ print_help ()
   printf "\t%s\n" "reset <option name>: resets volume option to defaults for all volumes in pool"
   printf "\t%s\n" "profile <volume>: runs a 60s profile of the supplied volume"
   printf "\t%s\n" "heal: starts a manual heal across all volumes in pool"
+  printf "\t%s\n" "heal-status: shows the status of heals across all volumes in pool"
   printf "\t%s\n" "rebalance: starts a manual rebalance across all volumes in pool"
   printf "\t%s\n" "rebalance-status: shows the status of any rebalance running on any volumes in pool"
 }
@@ -57,6 +58,12 @@ parse_commandline ()
       while read -r line; do
           echo "Issuing manual heal on volume $line ..."
           gluster volume heal "$line"
+      done <<< "$ALL_GLUSTER_VOLUMES"
+      ;;
+    heal-status)
+      while read -r line; do
+          echo "Status of heal on volume $line ..."
+          gluster volume heal "$line" info
       done <<< "$ALL_GLUSTER_VOLUMES"
       ;;
     rebalance)
