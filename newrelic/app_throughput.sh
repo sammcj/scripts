@@ -8,16 +8,18 @@ set -euo pipefail
 # Note: macOS is bsd based, so you need to use -v -Xd rather than --date=-X days
 START_DATE=$(date -v-30d +%F)
 
-# create CSV to write to (exist if exists)
-touch throughput.csv
+# Cleanup any previous output and add a heading
+rm throughput.csv
+echo -e "Application\tThroughput" > throughput.csv
 
 # Get applications
 curl -X GET 'https://api.newrelic.com/v2/applications.json' \
-  -H "Api-Key:${NEWRELIC_APIKEY}" | jq -r '.applications | .[] | [.id, .name] | @tsv' | \
+  -H "Api-Key:${NEWRELIC_APIKEY}" > applications.json
+  
+jq -r '.applications | .[] | [.id, .name] | @tsv' < applications.json | \
   while IFS=$'\t' read -r APPID APPNAME; do
     {
-      echo -n -e "Application\t$APPNAME"
-      echo -n -e "\tThroughput\t"
+      echo -n -e "$APPNAME\t"
       
     # Get throughput
     curl -s -X GET "https://api.newrelic.com/v2/applications/${APPID}/metrics/data.json" \
