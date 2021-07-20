@@ -75,3 +75,9 @@ $RECYCLE.BIN/
 # Misc
 
 port_check_pallet.py
+
+# vscode
+.dccache
+
+# newrelic
+newrelic/throughput.csv
