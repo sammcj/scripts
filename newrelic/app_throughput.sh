@@ -9,13 +9,17 @@ set -euo pipefail
 START_DATE=$(date -v-30d +%F)
 
 # Cleanup any previous output and add a heading
-rm throughput.csv
+rm throughput.csv applications.json
 echo -e "Application\tThroughput" > throughput.csv
+touch applications.json
 
-# Get applications
-curl -X GET 'https://api.newrelic.com/v2/applications.json' \
-  -H "Api-Key:${NEWRELIC_APIKEY}" > applications.json
-  
+# Get applications (pageinated, defaults to a maximum of 5 pages)
+for i in {1..4}
+do
+  curl -X GET "https://api.newrelic.com/v2/applications.json?page=$i" \
+    -H "Api-Key:${NEWRELIC_APIKEY}" >> applications.json
+done
+
 jq -r '.applications | .[] | [.id, .name] | @tsv' < applications.json | \
   while IFS=$'\t' read -r APPID APPNAME; do
     {
