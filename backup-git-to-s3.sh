@@ -56,7 +56,7 @@ $TAR_COMMAND "$FILEPATH" $REPOSITORY_PATH || exit_error "Failed to create tar fi
 
 if [ -f "$FILEPATH" ]; then
   echo "Backing up ${REPOSITORY} from ${REPOSITORY_PATH} as ${FILEPATH} to ${S3_URL}"
-  s3cmd put "$FILEPATH" "$S3_URL"
+  aws s3 cp "$FILEPATH" "$S3_URL"
 else
   exit_error "Error uploading ${FILEPATH} to $S3_URL"
 fi
