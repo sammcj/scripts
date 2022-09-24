@@ -50,13 +50,3 @@ run_command_on_disk() {
 }
 
 run_command_on_disk "$@"
-
-# Check if the disk has smart errors or warnings
-check_smart() {
-  smartctl_command smartctl -H
-}
-
-# Check the last time of a short or long smart test
-check_smart_test() {
-  smartctl_command smartctl -l selftest
-}
