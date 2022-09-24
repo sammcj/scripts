@@ -4,25 +4,27 @@
 
 set -eou pipefail
 
-if [ $# -eq 0 ]; then
-  usage
-  exit 1
-fi
-
 # print usage
 usage() {
-  echo "Usage: smartctl_ssa.sh <device> <command>"
-  echo "Example: smartctl_ssa.sh /dev/sda -a          # Outputs all smart info"
-  echo "Example: smartctl_ssa.sh /dev/sda -H          # Outputs the health status"
+  echo "Usage:   smartctl_ssa.sh <device> <command>"
+  echo "Example: smartctl_ssa.sh /dev/sda -a          # Get all smart info"
+  echo "Example: smartctl_ssa.sh /dev/sda -H          # Get the health status"
   echo "Example: smartctl_ssa.sh /dev/sda -t short    # Starts a short smart test"
-  echo "Example: smartctl_ssa.sh /dev/sda -l selftest # Outputs the last time a smart test was run"
+  echo "Example: smartctl_ssa.sh /dev/sda -l selftest # Get the last time a smart test was run"
+  echo -e ""
 }
-# pass the command to run, the disk and any parameters to smartctl, if no command is given default to using run_command_on_disk
 
 # Get the list of all disks on the controller, and output the bay and block device name
 all_disks() {
   ssacli ctrl first pd all show detail | grep -Ee 'Disk Name' -Ee 'Bay' | awk '{print $1 $2 $3}' | paste - - | sed 's/\t/ /' | awk -F " |:" '{print $2, $4}' | sort
 }
+
+if [ $# -eq 0 ]; then
+  usage
+  echo -e "Detected Smart Array [Bays] [Disks]:"
+  all_disks
+  exit 1
+fi
 
 # Return the bay number for a given disk name
 get_bay() {
