@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 # Find the latest release from a Github repo and downloads it for your platform/arch.
 
 # Usage: ./github-dl-latest.sh <owner>/<repo>
