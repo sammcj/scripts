@@ -1,67 +1,169 @@
-# You can make this your global default by running:
-# git config --global core.excludesfile ~/git/scripts/.gitignore
+#### THIS FILE IS MANAGED BY AN AUTOMATED WORKFLOW ####
 
-### OSX
+# This is the same as ../.gitignore for JS/TS/Java/Python projects, except for the top block for files required by github-actions
 
-*.DS_Store
-.AppleDouble
-.LSOverride
+### START GITHUB ACTIONS FILES ###
 
-# Icon must end with two \r
-Icon
+!**/node_modules
+!**/dist
 
-# Thumbnails
-._*
+### END GITHUB ACTIONS FILES ###
+
+# Inverse matchs to ensure these aren't ignored
+!*.env.template
+!*.eslintrc.js
+!*.prettierrc.js
+!*.config.js
+
+# Typescipt and CDK
+**/*.cdk.staging
+**/*.d.ts
+**/*.tabl.json
+**/*.tsbuildinfo
+**/cdk.context.json
+**/cdk.out
+
+# NodeJS
+**/node_modules
+
+# Test and coverage output
+**/coverage/
+**/test-report.xml
+.coverage.*
+htmlcov/
+megalinter-reports/
+
+# Editors
+.project
+.settings
+.springBeans
+**/.favorites.json
+**/.idea
+**/.vscode
+**/*.Session.vim
+**/*.sw[a-z]
+**/*.vim
+**/*.zwc
+**/*~
+
+# OS generated files
+**/._*
+**/.AppleDouble
+**/.dccache
+**/.dropbox
+**/.dropbox.attr
+**/.dropbox.cache
+**/.DS_Store
+**/.DS_STORE
+**/.lnk
+**/.LSOverride
+**/$RECYCLE.BIN/
+**/Desktop.ini
+**/ehthumbs.db
+**/Thumbs.db
 
 # Files that might appear in the root of a volume
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
+**/.com.apple.timemachine.donotpresent
+**/.DocumentRevisions-V100
+**/.fseventsd
+**/.Spotlight-V100
+**/.TemporaryItems
+**/.Trashes
+**/.VolumeIcon.icns
 
 # Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
+**/.apdisk
+**/.AppleDB
+**/.AppleDesktop
+**/Network Trash Folder
+**/Temporary Items
 
-### PUPPET
+# Temp files
+**/.temp
+**/.tmp
+tmp/
 
-.vagrant
+# Files that commonly contain secrets
+**/*.key
+**/*.pem
+**/*.pfx
+**/*.p12
+**/*.jks
+**/*.keystore
+**/*.pkcs12
+**/*.pkcs8
+**/*.pkpass
+**/*.secrets
 
-### VIM
+# git mu-repo
+**/.mu_repo
 
-# swap
-[._]*.s[a-w][a-z]
-[._]s[a-w][a-z]
-# session
-Session.vim
-# temporary
-.netrwhist
-*~
-# auto-generated tag files
-tags
+# Local state files / misc
+.dynamodb/
+.eslintcache
+.fusebox/
+.grunt
+.lock-wscript
+.next
+.node_repl_history
+.npm
+.nuxt
+.nyc_output
+.serverless/
+.vuepress/dist
+.yarn-integrity
+*.seed
+*.tgz
+**/.BUILD_COMPLETED
+**/.cache
+**/.filesystem
+**/.LAST_BUILD
+**/.local-npm
+**/.nyc_output
+**/.nycrc
+**/.tools
+**/.webassets-cache
+**/*.lock
+**/*.lock.hcl
+**/*.pid
+**/db.sqlite3
+**/db.sqlite3-journal
+bower_components
+jspm_packages/
+lib-cov
 
-### Dropbox settings and caches
-.dropbox
-.dropbox.attr
-.dropbox.cache
+# Logs
+**/*.log
 
-### WINDOWS
+# Build directories
+**/_build/
+**/dist
+build/
+out/
+target/
 
-# Windows image file caches
-Thumbs.db
-ehthumbs.db
+# Python
+__pycache__/
+__pypackages__/
+.ipynb_checkpoints
+*$py.class
+celerybeat-schedule
+develop-eggs/
+dmypy.json
+eggs/
+ipython_config.py
+local_settings.py
+pip-delete-this-directory.txt
+pip-log.txt
+pip-wheel-metadata/
+venv
 
-# Folder config file
-Desktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
+# Jekyll
+_site
+.jekyll-cache
+.jekyll-metadata
+.sass-cache
+Gemfile.lock
 
 # Windows Installer files
 *.cab
@@ -69,12 +171,6 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 
-# Windows shortcuts
-*.lnk
-
-# Misc
-
-port_check_pallet.py
-
-# vscode
-.dccache
+# Bootstrap files
+*private*.rc
+redo_aliases
