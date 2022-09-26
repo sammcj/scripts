@@ -7,18 +7,17 @@ echo ""
 
 VDI_UUIDS=$(xe vdi-list read-only=false --minimal | sed 's/,/ /g')
 
-for VDI in ${VDI_UUIDS} ; do
+for VDI in ${VDI_UUIDS}; do
   VBD_UUID=$(xe vbd-list vdi-uuid="${VDI}" --minimal)
 
-  if [ "${VBD_UUID}x" == "x" ] ; then
-    NAME_LABEL=$(xe vdi-list uuid="${VDI}"|grep name-label|cut -d':' -f2)
+  if [ "${VBD_UUID}x" == "x" ]; then
+    NAME_LABEL=$(xe vdi-list uuid="${VDI}" | grep name-label | cut -d':' -f2)
 
-      if [ "$NAME_LABEL" != " Update" ] && [ "$NAME_LABEL" != " Pool Metadata Backup:" ] ; then
-        echo "VDI: ${VDI}"
-        echo "NULL VBD. Probably not attached to any vm"
-        echo "Name-Label: ${NAME_LABEL}"
-        echo "------------------------------------------"
-     fi
+    if [ "$NAME_LABEL" != " Update" ] && [ "$NAME_LABEL" != " Pool Metadata Backup:" ]; then
+      echo "VDI: ${VDI}"
+      echo "NULL VBD. Probably not attached to any vm"
+      echo "Name-Label: ${NAME_LABEL}"
+      echo "------------------------------------------"
+    fi
   fi
 done
-

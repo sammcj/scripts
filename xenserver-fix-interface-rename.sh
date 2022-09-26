@@ -13,7 +13,6 @@ set -e
 IR=$(interface-rename -l 2>/dev/null)
 #IR=$(cat ixint.txt)
 
-
 echo "Current state:"
 printf %s "$IR"
 echo ""
@@ -22,8 +21,8 @@ echo "---------------------------"
 CPORT=''
 
 function get_port_by_name() {
-  PORT=$(printf %s "$IR" | grep "$*" | sed 's/  /|/g')
-  CPORT=$PORT
+   PORT=$(printf %s "$IR" | grep "$*" | sed 's/  /|/g')
+   CPORT=$PORT
 }
 
 get_port_by_name 'Port 1'
@@ -60,11 +59,9 @@ echo ""
 echo -n "Do you want to go ahead and run the command now y/n?"
 read reply
 
-if [ "$reply" = y -o "$reply" = Y ]
-then
+if [ "$reply" = y -o "$reply" = Y ]; then
    $IRCMD
    echo "interface-rename WAS run, reboot now for changes to take effect"
 else
    echo "interface-rename was NOT run"
 fi
-

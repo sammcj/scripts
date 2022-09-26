@@ -4,13 +4,13 @@
 
 MAX_KERNELS=$1
 
-if [[ -f /etc/debian_version ]] ; then
+if [[ -f /etc/debian_version ]]; then
   INSTALLED_KERNELS=$(dpkg --list | grep -c linux-image)
 else
   INSTALLED_KERNELS=$(rpm -qa | grep -cE 'kernel-ml-[0-9]|kernel.x86_64')
 fi
 
-if (( $INSTALLED_KERNELS > $MAX_KERNELS )) ; then
+if (($INSTALLED_KERNELS > $MAX_KERNELS)); then
   echo "WARNING: Number of installed kernels: $INSTALLED_KERNELS"
   exit 1
 fi

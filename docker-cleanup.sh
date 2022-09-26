@@ -19,14 +19,13 @@ docker images | GetDockerID
 
 read -r -p "Are you sure? [y/N] " response
 case $response in
-    [yY][eE][sS]|[yY])
-        echo "There's no going back now..."
-        docker stop $(docker ps -a | GetDockerID | awk '{print $1}')
-        docker rm $(docker ps -a | GetDockerID | awk '{print $1}')
-        docker rmi $(docker images | GetDockerID | awk '{print $3}')
-        ;;
-    *)
-        exit 0
-        ;;
+[yY][eE][sS] | [yY])
+    echo "There's no going back now..."
+    docker stop "$(docker ps -a | GetDockerID | awk '{print $1}')"
+    docker rm "$(docker ps -a | GetDockerID | awk '{print $1}')"
+    docker rmi "$(docker images | GetDockerID | awk '{print $3}')"
+    ;;
+*)
+    exit 0
+    ;;
 esac
-

@@ -2,16 +2,18 @@
 
 # FZF Wrapper over git to interactively diff files across branches
 
-readarray -t git_files < <(git ls-files | fzf \
-  --prompt="Choose File(s): " \
-  --height 40% --reverse --multi \
-  --header="Choose files to diff (TAB to select multiple files)"
+readarray -t git_files < <(
+  git ls-files | fzf \
+    --prompt="Choose File(s): " \
+    --height 40% --reverse --multi \
+    --header="Choose files to diff (TAB to select multiple files)"
 )
 
-target_branch=$(git for-each-ref --format='%(refname:short)' refs/heads/* | fzf \
-  --prompt="Select target branch: " \
-  --header="Select branch to compare the files against" \
-  --height 40% --reverse
+target_branch=$(
+  git for-each-ref --format='%(refname:short)' refs/heads/* | fzf \
+    --prompt="Select target branch: " \
+    --header="Select branch to compare the files against" \
+    --height 40% --reverse
 )
 
 # get current branch

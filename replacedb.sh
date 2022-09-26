@@ -22,21 +22,20 @@ else
 fi
 
 echo ""
-echo "WARNING: THIS ACTION IS DISTRUCTIVE AND IRREVERSIBLE!"
+echo "WARNING: THIS ACTION IS DESTRUCTIVE AND IRREVERSIBLE!"
 read -r -p "If you sure you want to DROP the destination database please type [$DEST_DB] " response
 
 case $response in
-  $DEST_DB)
-    logger "replacedb replacing the database $DEST_DB with content from $SQL_FILE"
-    set -x
-    psql -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity where pg_stat_activity.datname = '$DEST_DB';"
-    dropdb "$DEST_DB"
-    createdb -E UTF8 "$DEST_DB"
-    sed -e "s/$SRC_DB/$DEST_DB/" "$SQL_FILE" | psql "$DEST_DB"
-    ;;
-  *)
-    echo "No changes made, exiting..."
-    exit
-    ;;
+$DEST_DB)
+  logger "replacedb replacing the database $DEST_DB with content from $SQL_FILE"
+  set -x
+  psql -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity where pg_stat_activity.datname = '$DEST_DB';"
+  dropdb "$DEST_DB"
+  createdb -E UTF8 "$DEST_DB"
+  sed -e "s/$SRC_DB/$DEST_DB/" "$SQL_FILE" | psql "$DEST_DB"
+  ;;
+*)
+  echo "No changes made, exiting..."
+  exit
+  ;;
 esac
-

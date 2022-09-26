@@ -1,5 +1,4 @@
-scripts
-=======
+# scripts
 
 misc scripts
 

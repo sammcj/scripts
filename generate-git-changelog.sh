@@ -64,4 +64,3 @@ generate_changelog() {
 generate_changelog
 
 cat "$CHANGELOG_FILE"
-
