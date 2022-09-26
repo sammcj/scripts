@@ -8,7 +8,7 @@ DELTA=d
 
 usage() {
   echo "Usage: alphabet [ -a | --alpha ] [ -b | --beta ]
-                        [ -c | --charlie CHARLIE ] 
+                        [ -c | --charlie CHARLIE ]
                         [ -d | --delta   DELTA   ] filename(s)"
   exit 2
 }
@@ -57,4 +57,4 @@ echo "ALPHA   : $ALPHA"
 echo "BETA    : $BETA "
 echo "CHARLIE : $CHARLIE"
 echo "DELTA   : $DELTA"
-echo "Parameters remaining are: $@"
+echo "Parameters remaining are: $*"
