@@ -1,9 +1,9 @@
 certifi==2021.10.8
-cffi==1.15.0
+cffi==1.15.1
 charset-normalizer==2.0.12
-cryptography==37.0.2
+cryptography==37.0.4
 idna==3.3
 pycparser==2.21
 PyJWT==2.4.0
 requests==2.27.1
-urllib3==1.26.9
+urllib3==1.26.12
