@@ -21,7 +21,7 @@ module.exports = {
     sourceType: 'module',
   },
   plugins: ['import', 'prettier'],
-  extends: ['prettier', 'eslint:recommended'],
+  extends: ['plugin:prettier/recommended', 'eslint:recommended'],
   root: true,
   rules: {
     quotes: ['error', 'single', { avoidEscape: true }],
@@ -32,10 +32,7 @@ module.exports = {
     'object-curly-spacing': ['error', 'always'],
     'array-bracket-spacing': ['error', 'never'],
     'object-curly-newline': ['error', { multiline: true, consistent: true }],
-    'object-property-newline': [
-      'error',
-      { allowAllPropertiesOnSameLine: true },
-    ],
+    'object-property-newline': ['error', { allowAllPropertiesOnSameLine: true }],
     'keyword-spacing': ['error'],
     'brace-style': ['error', '1tbs', { allowSingleLine: true }],
     'space-before-blocks': 'error',
@@ -46,15 +43,12 @@ module.exports = {
     'no-shadow': 'off',
     'no-use-before-define': 'off',
     'import/order': 'error',
+    'prettier/prettier': 'error',
     'max-classes-per-file': ['error', 3],
     /** no console and debugger in CDK  */
     'no-console': 'error',
     'no-debugger': 'error',
     'no-underscore-dangle': 'off',
-    'lines-between-class-members': [
-      'error',
-      'always',
-      { exceptAfterSingleLine: true },
-    ],
+    'lines-between-class-members': ['error', 'always', { exceptAfterSingleLine: true }],
   },
 };
