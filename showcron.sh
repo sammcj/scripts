@@ -63,3 +63,13 @@ done < <(cut --fields=1 --delimiter=: /etc/passwd)
 sed --regexp-extended "s/^(\S+) +(\S+) +(\S+) +(\S+) +(\S+) +(\S+) +(.*)$/\1\t\2\t\3\t\4\t\5\t\6\t\7/" "$temp" | sort --numeric-sort --field-separator="${tab}" --key=2,1 | sed "1i\mi\th\td\tm\tw\tuser\tcommand" | column -s"${tab}" -t
 
 rm --force "$temp"
+
+# List all files in the /etc/cron.* directories.
+for dir in hourly daily weekly monthly; do
+  if [[ -d "/etc/cron.${dir}" ]]; then
+    if [[ "$(ls -A /etc/cron.${dir})" ]]; then
+      echo -e "\n[cron ${dir} files]"
+      readlink -f /etc/cron.${dir}/*
+    fi
+  fi
+done
