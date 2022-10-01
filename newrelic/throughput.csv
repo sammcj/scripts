@@ -1,0 +1,730 @@
+Application	Throughput
+${application.name} (DMZ AU)	0.009
+${application.name} (DMZ NZ)	0.0001
+'CallNotify (AU)'	0
+'CallNotify (NZ)'	0
+/	0
+Account Service prod_au	0.03
+Account Service prod_nz	0.003
+Account Service trsonline_dmzprod_au	0
+Account Service trsonline_dmzprod_nz	0
+account-order-summary-service (DMZ AU)	0
+account-order-summary-service (DMZ NZ)	0
+Actrol Website (AU)	28.4
+Actrol Website CMS Legacy (AU)	0.0052
+AD Integration Services (AU)	4
+AD Integration Services (NZ)	4
+application	0
+Application Access Control (AU)	118
+Application Access Control (DMZ AU)	4.37
+Application Access Control (DMZ NZ)	0.68
+Application Access Control (NZ)	5.4
+approved-product-list-service (DMZ AU)	0.322
+approved-product-list-service (DMZ NZ)	0.0371
+AR Fuji Xerox Integration (AU)	0
+AR Fuji Xerox Integration (NZ)	0
+AR Internal Customer Statement Access (AU)	0.85
+AR Internal Customer Statement Access (NZ)	0.0614
+AR Payment Integration Service (DMZ AU)	0
+AR Payment Integration Service (DMZ NZ)	0
+AR Statement Integration Service (AU)	0
+AR Statement Integration Service (NZ)	0
+aroflo-punch-out-cart-app (AU)	0
+aroflo-punch-out-cart-app (DMZ AU)	0.222
+aroflo-punch-out-cart-app (DMZ NZ)	0.0043
+aroflo-punch-out-cart-app (NZ)	0
+Auth0 Authentication Integration Service (DMZ AU)	9.94
+Auth0 Authentication Integration Service (DMZ NZ)	1.36
+Bank Statement App prod_au	0
+Bank Statement App prod_nz	0.0005
+Bank Statement Service (AU)	0
+Bank Statement Service (NZ)	0
+Branch Dashboard Backend (AU)	0
+Branch Dashboard Backend (NZ)	0
+Branch Dashboard CO Service (AU)	5.94
+Branch Dashboard CO Service (NZ)	0.394
+Branch Delivery Area (AU)	0
+Branch Delivery Area (NZ)	0
+Branch Excess Stock (AU)	1.05
+Branch Excess Stock (NZ)	0.0581
+Branch Excess Stock Console (AU)	0
+Branch Excess Stock Console (NZ)	0
+Branch Excess Stock Service (AU)	4.48
+Branch Excess Stock Service (NZ)	0.207
+Branch Label Service (AU)	2.06
+Branch Label Service (NZ)	2
+Branch Service (AU)	0
+Branch Service (DMZ AU)	0
+Branch Service (DMZ NZ)	0
+Branch Service (NZ)	0
+Brand Asset Service (AU)	0
+Brand Asset Service (DMZ AU)	0
+Brand Asset Service (DMZ NZ)	0
+Brand Asset Service (NZ)	0
+Brand Service prod_au	0.001
+Brand Service prod_nz	0.0009
+Brand Service trsonline_dmzprod_au	0.0062
+Brand Service trsonline_dmzprod_nz	0.0034
+Business Unit Service (AU)	0.186
+Business Unit Service (DMZ AU)	7
+Business Unit Service (DMZ NZ)	0.351
+Business Unit Service (NZ)	0.0916
+Buying Guide Maintenance Application prod_au	0
+Buying Guide Maintenance Application prod_nz	0
+Buying Guide Quantity Break Service prod_au	0.0248
+Buying Guide Quantity Break Service prod_nz	0.0007
+Buying Guide Region Maintenance BFF (AU)	0.0327
+Buying Guide Region Maintenance BFF (NZ)	0.0022
+Buying Guide Service prod_au	0.0202
+Buying Guide Service prod_nz	0.0066
+Buying Guide Service trsonline_dmzprod_au	0.0001
+Buying Guide Service trsonline_dmzprod_nz	0
+Buying Guide Upload Application prod_au	0.0015
+Buying Guide Upload Application prod_nz	0.0007
+Buyins (AU)	186
+Buyins (NZ)	9.49
+Buyins Service (AU)	103
+Buyins Service (DMZ AU)	1.55
+Buyins Service (DMZ NZ)	0.0668
+Buyins Service (NZ)	5.05
+Cartage Service (AU)	22.6
+Cartage Service (DMZ AU)	20.9
+Cartage Service (DMZ NZ)	3.3
+Cartage Service (NZ)	1.12
+Centrally Managed Products Maintenance (AU)	0.0029
+Centrally Managed Products Maintenance (NZ)	0
+CodeToValue Service prod_au	1.6
+CodeToValue Service prod_nz	0.135
+CodeToValue Service trsonline_dmzprod_au	0
+CodeToValue Service trsonline_dmzprod_nz	0
+Company Services (AU)	13.6
+Company Services (DMZ AU)	60.2
+Company Services (DMZ NZ)	1.28
+Company Services (NZ)	0.68
+Container Prioritisation UI Service (AU)	0.612
+Copy Quote (AU)	9.45
+Copy Quote (NZ)	0.477
+Core Order Service (AU)	4.99
+Core Order Service (NZ)	0.804
+Corporate Service (AU)	0.0002
+Corporate Service (DMZ AU)	0
+Corporate Service (DMZ NZ)	0
+Corporate Service (NZ)	0.0001
+Cost Service prod_au	0
+Cost Service prod_nz	0
+Courier Service (AU)	1.33
+Courier Service (NZ)	0.0618
+Cover Note Service (AU)	0.292
+Cover Note Service (NZ)	0
+Credit Account Sales Service prod_au	0.196
+Credit Account Sales Service prod_nz	0.0149
+Creditor Service prod_au	0
+Creditor Service prod_nz	0
+Customer Application Integration Services (AU)	11.6
+Customer Application Integration Services (DMZ AU)	2.45
+Customer Application Integration Services (DMZ NZ)	0.751
+Customer Application Integration Services (NZ)	0.582
+Customer Application Onboarding Gateway (DMZ AU)	0
+Customer Application Onboarding Gateway (DMZ NZ)	0
+Customer Application Onboarding Service (DMZ AU)	0
+Customer Arctick Licence prod_au	0.0809
+Customer Arctick Licence prod_nz	0
+Customer Arctick Licence trsonline_dmzprod_au	0.0116
+Customer Arctick Licence trsonline_dmzprod_nz	0
+Customer Contacts (AU)	47.6
+Customer Contacts (NZ)	1.95
+Customer Dashboard (AU)	89.8
+Customer Dashboard (NZ)	7.02
+Customer Integration Notification (AU)	0
+Customer Integration Notification (NZ)	0
+Customer Invoicing Settings Service prod_au	0.0629
+Customer Invoicing Settings Service prod_nz	0.005
+Customer Maintenance Application prod_au	3.38
+Customer Maintenance Application prod_nz	1.5
+Customer Messages Service prod_au	28.5
+Customer Messages Service prod_nz	1.63
+Customer Messages Service trsonline_dmzprod_au	3.92
+Customer Messages Service trsonline_dmzprod_nz	0.362
+Customer Order Delivery Request (AU)	28
+Customer Order Delivery Request Service (AU)	20.1
+Customer Order Service (AU)	306
+Customer Order Service (DMZ AU)	14.2
+Customer Order Service (DMZ NZ)	0.89
+Customer Order Service (NZ)	12.8
+Customer Orders Entry (AU)	317
+Customer Orders Entry (NZ)	16.1
+Customer Pricing Settings Service prod_au	133
+Customer Pricing Settings Service prod_nz	5.57
+Customer Pricing Settings Service trsonline_dmzprod_au	56.7
+Customer Pricing Settings Service trsonline_dmzprod_nz	2.63
+Customer Python Service prod_au	135
+Customer Python Service prod_nz	5.7
+Customer Python Service trsonline_dmzprod_au	56.8
+Customer Python Service trsonline_dmzprod_nz	2.62
+Customer Search (AU)	136
+Customer Search (NZ)	51.9
+Customer Search (Training AU)	0
+Customer Search Service (AU)	0.114
+Customer Search Service (NZ)	0.0289
+Customer Services (AU)	578
+Customer Services (DMZ AU)	144
+Customer Services (DMZ NZ)	15.2
+Customer Services (NZ)	26.7
+Customer Trading Restriction (AU)	88.4
+Customer Trading Restriction (NZ)	72.8
+Customer Transaction Requirements Service prod_au	0.0434
+Customer Transaction Requirements Service prod_nz	0.0012
+Customer Transaction Requirements Service trsonline_dmzprod_au	0
+Customer Transaction Requirements Service trsonline_dmzprod_nz	0
+Cycle Count Mobile UI Service (DMZ AU)	25.8
+Cycle Count Mobile UI Service (DMZ NZ)	1.67
+Cylinder Master Integration	0
+Cylinder Master Integration (AU)	1
+Cylinder Master UI Service (AU)	0.977
+DC Delivery Schedule (AU)	0.105
+DC Delivery Schedule (NZ)	0.0008
+Debtor Journal Service prod_au	0
+Debtor Journal Service prod_nz	0
+Debtor Service prod_au	0.297
+Debtor Service prod_nz	0.0256
+Debtor Service trsonline_dmzprod_au	1.9
+Debtor Service trsonline_dmzprod_nz	0.169
+debtor-maintenance-application prod_au	0.0732
+debtor-maintenance-application prod_nz	0.005
+Delivery Label Printing Service (AU)	0.236
+Delivery Master Data Service (AU)	0
+Deposit Entry Backend (AU)	9.53
+Deposit Entry Backend (NZ)	0.348
+Diary Notes Service prod_au	54.1
+Diary Notes Service prod_nz	2.82
+Digital Asset Service prod_au	75.9
+Digital Asset Service prod_nz	2.29
+Digital Asset Service trsonline_dmzprod_au	300
+Digital Asset Service trsonline_dmzprod_nz	14.1
+Digital Product Details Widget Component	24
+Digital User Details Service	189
+DMS Deldetails Integration (AU)	1.71
+DMS Delivery Management Integration (AU)	1.77
+DMS Delivery Management System Jumpbox (AU)	0.415
+DMS Delivery Master Data App (AU)	0.0079
+DMS Delivery Master Data App (NZ)	0
+DMS Delivery Master Data Service (AU)	12
+DMS Delivery Master Data Service (NZ)	0.0003
+DMS Delivery Order Details Query Service (AU)	2.16
+DMS Delivery Order Query Details Service (NZ)	0
+DMS Delivery Pick Confirmation (AU)	31.5
+DMS Delivery Pick Confirmation (NZ)	0.0002
+DMS Delivery Pick Service (AU)	9.4
+DMS Delivery Query App (AU)	1.92
+DMS Delivery Query App (NZ)	0.0264
+DMS Delivery Query Gateway (AU)	0.474
+DMS Delivery Query Gateway (DMZ AU)	22.9
+DMS Delivery Query Gateway (DMZ NZ)	1.37
+DMS Delivery Query Gateway (NZ)	0.0278
+DMS Delivery Query Service (AU)	23.1
+DMS Delivery Query Service (NZ)	0.0108
+Document Services (AU)	23.1
+Document Services (DMZ AU)	7.35
+Document Services (DMZ NZ)	0.501
+Document Services (NZ)	1.27
+Email Service (AU)	4.31
+Email Service (DMZ AU)	0.415
+Email Service (DMZ NZ)	0.0288
+Email Service (NZ)	0.241
+Email Template Service (DMZ AU)	0.205
+Email Template Service (DMZ NZ)	0.0137
+email-order-connector-service (DMZ AU)	0.609
+email-order-coordinator (DMZ AU)	0.0007
+email-order-parse-service (DMZ AU)	0.189
+Employee Orchestration prod_au	0.0603
+Employee Orchestration prod_nz	0.0016
+Employees Service prod_au	0.88
+Employees Service prod_nz	0.0178
+Employees Service trsonline_dmzprod_au	0
+Employees Service trsonline_dmzprod_nz	0
+enterprise-business-metrics-listener (AU)	24
+enterprise-business-metrics-listener (DMZ AU)	120
+enterprise-business-metrics-listener (DMZ NZ)	120
+enterprise-business-metrics-listener (NZ)	24
+enterprise-customer-auth-service (DMZ AU)	8.53
+enterprise-customer-auth-service (DMZ NZ)	9.61
+enterprise-customer-price-push-service (DMZ AU)	0
+enterprise-customer-price-push-service (DMZ NZ)	0
+enterprise-customer-special-reporting (DMZ AU)	0.0012
+enterprise-customer-special-reporting (DMZ NZ)	0
+enterprise-service-monitor (DMZ AU)	0
+Excess Stock Rebalance (AU)	0.0914
+Excess Stock Rebalance (NZ)	0.0021
+Finance Service (AU)	0.129
+Finance Service (NZ)	0.129
+Forklift Check Data Import Service (DMZ AU)	0
+Forklift Check Data Import Service (DMZ NZ)	0
+Forklift Check Mobile UI Service (DMZ AU)	0
+Forklift Check Mobile UI Service (DMZ NZ)	0
+Forklift Check Service (DMZ AU)	0
+Forklift Check Service (DMZ NZ)	0
+Freight Forwarder Integration (AU)	0
+Freight Forwarder Integration (NZ)	0
+Gains Integration (AU)	0.0025
+Geo Service (AU)	49.5
+Geo Service (DMZ AU)	35.4
+Geo Service (DMZ NZ)	0.685
+Geo Service (NZ)	2.31
+Group Account Service prod_au	0.482
+Group Account Service prod_nz	0.0946
+Group Account Service trsonline_dmzprod_au	0
+Group Account Service trsonline_dmzprod_nz	0
+HR Employee Service (AU)	7.85
+HR Routes (AU)	0.11
+Identity Cards Maintenance (AU)	0.0538
+Identity Cards Maintenance (NZ)	0
+Image Service (AU)	3.24
+Image Service (DMZ AU)	5.07
+Image Service (DMZ NZ)	0.335
+Image Service (NZ)	0.279
+integration-account-selection-application (AU)	0
+integration-account-selection-application (DMZ AU)	0.0312
+integration-account-selection-application (DMZ NZ)	0.0052
+integration-account-selection-application (NZ)	0
+Inter Branch Transfer Query Service (AU)	0.0111
+Inter Branch Transfer Query Service (NZ)	0
+Inter Branch Transfer Record Service (AU)	3.79
+Inter Branch Transfer Record Service (NZ)	0.0918
+Inventory Enquiry (AU)	0.118
+Inventory Enquiry (NZ)	0
+Inventory Events (AU)	0
+Inventory Events (NZ)	0
+Inventory Master Data Sync (AU)	0
+Inventory Master Data Sync (NZ)	0
+Inventory Metrics Service (AU)	0
+Inventory Metrics Service (NZ)	0
+Inventory Reservation (AU)	0
+Inventory Reservation (NZ)	0
+Inventory Reservation Service (AU)	0
+Inventory Reservation Service (NZ)	0
+Inventory Revaluation (AU)	0
+Inventory Revaluation (NZ)	0
+Inventory Services (AU)	133
+Inventory Services (DMZ AU)	26.1
+Inventory Services (DMZ NZ)	2.24
+Inventory Services (NZ)	22
+Invoice Data Feeder (AU)	0
+Invoice Prepare To Send Service (AU)	7.56
+Invoice Prepare To Send Service (NZ)	0.558
+Invoice Search (AU)	0.0703
+Invoice Search (DMZ PROD AU)	19.5
+Invoice Search (DMZ PROD NZ)	9.61
+Invoice Search (NZ)	0
+Invoice Service (AU)	20.8
+Invoice Service (DMZ AU)	20.6
+Invoice Service (DMZ NZ)	1.29
+Invoice Service (NZ)	0.987
+Invoice Services (AU)	0
+Invoice Services (NZ)	0
+invoice-gateway (DMZ AU)	7.59
+invoice-gateway (DMZ NZ)	9.53
+invoice-push-service (AU)	0
+invoice-push-service (NZ)	0
+Item Tracking Service Charge (AU)	0.0001
+Item Tracking System Service (AU)	116
+Item Tracking System Service (DMZ AU)	0.723
+Item Tracking UI Service (AU)	6.55
+Jasper Report Service (AU)	0.269
+Jasper Report Service (NZ)	0.0259
+Landed Unit Cost (AU)	0.188
+Landed Unit Cost (NZ)	0.0449
+Location Service (AU)	0.0484
+Location Service (DMZ AU)	0.0143
+Location Service (DMZ NZ)	0.0084
+Location Service (NZ)	0.0081
+Logistics Production AU - Cylinder Master	0
+maX AB Test Service (DMZ AU)	140
+maX AB Test Service (DMZ NZ)	6.95
+maX Accounts And QuickPay Application (DMZ AU)	3.98
+maX Accounts And QuickPay Application (DMZ NZ)	0.993
+maX Branch Quotes Application (DMZ AU)	3.73
+maX Branch Quotes Application (DMZ NZ)	1.31
+maX Checkout Application (DMZ AU)	24.6
+maX Checkout Application (DMZ NZ)	3.76
+maX Customer Identity Card Application (DMZ AU)	0.14
+maX Customer Identity Card Application (DMZ NZ)	0
+maX Dashboard Application (DMZ AU)	11.6
+maX Dashboard Application (DMZ NZ)	2.17
+maX Flexitrack Application (DMZ AU)	0
+maX Flexitrak Application (DMZ AU)	0.465
+maX Flexitrak Service (DMZ AU)	0.567
+maX Invoice Search Application (DMZ AU)	14.8
+maX Invoice Search Application (DMZ NZ)	2.22
+maX Mini Cart Application (DMZ AU)	38.5
+maX Mini Cart Application (DMZ NZ)	6.71
+maX My Orders Application (DMZ AU)	0
+maX My Orders Application (DMZ NZ)	0
+maX My Quotes Application (DMZ AU)	3.56
+maX My Quotes Application (DMZ NZ)	1.88
+maX Order Query Service (DMZ AU)	18.3
+maX Order Query Service (DMZ NZ)	1.32
+maX Order Service (DMZ AU)	27.1
+maX Order Service (DMZ NZ)	4.14
+maX Orders Application (DMZ AU)	3.17
+maX Orders Application (DMZ NZ)	0.71
+MaX Price File Frontend (DMZ AU)	0.763
+maX Price File Frontend (DMZ NZ)	0.42
+maX Product List Application (DMZ AU)	7.28
+maX Product List Application (DMZ NZ)	5.06
+maX Product List Service (DMZ AU)	42.6
+maX Product List Service (DMZ NZ)	7.6
+maX Quoting Tool Application (DMZ AU)	2.85
+maX Quoting Tool Application (DMZ NZ)	1.09
+maX Third Party Integration Application (DMZ AU)	0.219
+maX Third Party Integration Application (DMZ NZ)	0.416
+maX Trade Quotes Application (DMZ AU)	0
+maX Trade Quotes Application (DMZ NZ)	0
+maX Web Analytics Application (DMZ AU)	97.1
+maX Web Analytics Application (DMZ NZ)	10.5
+max-quoting-tool-service (DMZ AU)	3.14
+max-quoting-tool-service (DMZ NZ)	0.726
+Menu Maintenance prod_au	0.0036
+Menu Maintenance prod_nz	0.0021
+Menu Service prod_au	83.1
+Menu Service prod_nz	5.01
+Message Relay (AU)	0
+Message Relay (NZ)	0
+Metalflex Website (AU)	17.8
+Metalflex Website CMS Legacy (AU)	0.0003
+My Hot Water Website (AU)	9.08
+MyAccount Rest Application (DMZ AU)	63.2
+MyAccount Rest Application (DMZ NZ)	51.6
+MYOB Customer Integration Service (DMZ AU)	0.0045
+MYOB Customer Integration Service (DMZ NZ)	0.0001
+MYOB Invoice Integration Service (AU)	0
+MYOB Invoice Integration Service (NZ)	0
+myob-invoice-integration (AU)	0
+myob-invoice-integration (NZ)	0
+NGP Branch Service (AU)	0.864
+NGP Branch Service (NZ)	0.13
+NGP Customer Service (AU)	1.16
+NGP Customer Service (NZ)	0.179
+Online Order Payment Service (AU)	0.0386
+Online Order Payment Service (NZ)	0.0001
+Online Order Release Service (AU)	3.18
+Online Order Release Service (NZ)	1.06
+Online Order Reminder (AU)	0
+Online Order Reminder (NZ)	0
+Online Orders Backend (AU)	27.2
+Online Orders Backend (NZ)	2.13
+Online Product Search Facade Service trsonline_dmzprod_au	204
+Online Product Search Facade Service trsonline_dmzprod_nz	9.59
+Order Service (AU)	3.54
+Order Service (DMZ AU)	11.7
+Order Service (DMZ NZ)	0.782
+Order Service (NZ)	0.237
+Organisation Service (AU)	0.102
+Organisation Service (DMZ AU)	0.0017
+Organisation Service (DMZ NZ)	0.0014
+Organisation Service (NZ)	0.0092
+organisation-structure-service prod_au	0.0394
+organisation-structure-service prod_nz	0.0026
+Other Stock On Hand (AU)	91
+Other Stock On Hand (NZ)	4.04
+Partner Message Services (AU)	4.94
+Partner Message Services (NZ)	0.268
+Phone Payment App prod_au	0.0153
+Phone Payment App prod_nz	0.0001
+Point Of Sales API Gateway (AU)	8.85
+Point Of Sales API Gateway (NZ)	1.41
+POS Order Payment Service (AU)	0
+POS Order Payment Service (NZ)	0
+POS Service (AU)	119
+POS Service (NZ)	5.94
+Preorder Service (AU)	5.42
+Preorder Service (DMZ AU)	0
+Preorder Service (DMZ NZ)	0
+Preorder Service (NZ)	0.421
+preorder-attachment-service (AU)	1.14
+preorder-attachment-service (DMZ AU)	0.164
+preorder-attachment-service (DMZ NZ)	0
+preorder-attachment-service (NZ)	0.0538
+preorder-gateway (DMZ AU)	0.233
+preorder-gateway (DMZ NZ)	0
+preorder-release-service (AU)	0
+preorder-release-service (NZ)	0
+Price File Generation (DMZ AU)	0.0016
+Price File Generation (DMZ NZ)	0.0003
+Price Likes Service prod_au	0.215
+Price Likes Service prod_nz	0.0135
+Price Likes Service trsonline_dmzprod_au	0
+Price Likes Service trsonline_dmzprod_nz	0
+Price Service (AU)	259
+Price Service (DMZ AU)	0.159
+Price Service (DMZ NZ)	0.0333
+Price Service (NZ)	12
+Price Service Python prod_au	488
+Price Service Python prod_nz	23.9
+Price Service Python trsonline_dmzprod_au	211
+Price Service Python trsonline_dmzprod_nz	16
+price-file-generation-trigger (DMZ AU)	0.0017
+price-file-generation-trigger (DMZ NZ)	0.0003
+price-gateway (DMZ AU)	0.0862
+price-gateway (DMZ NZ)	0.0093
+Printer Service prod_au	0
+Printer Service prod_nz	0
+Printing Service (AU)	3.92
+Printing Service (NZ)	0.194
+Product Asset Service (AU)	0
+Product Asset Service (NZ)	0
+Product Attribute Comparison Service (DMZ AU)	44.6
+Product Attribute Comparison Service (DMZ NZ)	3.69
+Product Attributes Service prod_au	0.0323
+Product Attributes Service prod_nz	0.0125
+Product Attributes Service training_au	0
+Product Attributes Service training_nz	0
+Product Branding BFF (AU)	0.023
+Product Branding BFF (NZ)	0.0012
+Product Comparison Application prod_au	0.0287
+Product Comparison Application prod_nz	0.0002
+Product Comparison Service prod_au	0.0273
+Product Comparison Service prod_nz	0.0106
+Product Details Service prod_au	531
+Product Details Service prod_nz	25.2
+Product Details Service trsonline_dmzprod_au	301
+Product Details Service trsonline_dmzprod_nz	20.4
+Product Extract Service Attribute Meta prod_au	0
+Product Extract Service Attribute Meta prod_nz	0
+Product Extract Service Attribute Values prod_au	0
+Product Extract Service Attribute Values prod_nz	0
+Product Extract Service BU BY Product prod_au	0
+Product Extract Service BU BY Product prod_nz	0
+Product Extract Service BU Rank prod_au	0
+Product Extract Service BU Rank prod_nz	0
+Product Extract Service CMP Delta prod_au	0
+Product Extract Service CMP Delta prod_nz	0
+Product Extract Service CMP Full prod_au	0
+Product Extract Service CMP Full prod_nz	0
+Product Extract Service Product Branch Exclusion prod_au	0
+Product Extract Service Product Branch Exclusion prod_nz	0
+Product Extract Service Product Group prod_au	3.21
+Product Extract Service Product Group prod_nz	1.11
+Product Extract Service Product Group Ref prod_au	1.19
+Product Extract Service Product Group Ref prod_nz	1.05
+Product Extract Service Product Group trsonline_dmzprod_au	58.5
+Product Extract Service Product Group trsonline_dmzprod_nz	5.28
+Product Extract Service Product Master prod_au	1.19
+Product Extract Service Product Master prod_nz	1.05
+Product Group Service prod_au	0.0157
+Product Group Service prod_nz	0.0024
+Product Group Service trsonline_dmzprod_au	313
+Product Group Service trsonline_dmzprod_nz	6.35
+Product Maintenance Tools Application prod_au	0.0007
+Product Maintenance Tools Application prod_nz	0.0003
+Product Query Backend (AU)	807
+Product Query Backend (NZ)	41.7
+Product Search (AU)	0.0245
+Product Search (NZ)	0
+Product Search Service (AU)	12
+Product Search Service (DMZ AU)	311
+Product Search Service (DMZ NZ)	36.3
+Product Search Service (NZ)	12
+Product Service (AU)	985
+Product Service (DMZ AU)	370
+Product Service (DMZ NZ)	29.7
+Product Service (NZ)	54.6
+Product Spare Part Application prod_au	0
+Product Spare Part Application prod_nz	0
+Product Spare Part prod_au	0.292
+Product Spare Part prod_nz	0.288
+Product spare part report and upload prod_au	0.0004
+Product spare part report and upload prod_nz	0.0003
+Product Spare Parts Service prod_au	0.0518
+Product Spare Parts Service prod_nz	0.0047
+Product Spare Parts Service trsonline_dmzprod_au	35.7
+Product Spare Parts Service trsonline_dmzprod_nz	1.74
+product-gateway (DMZ AU)	0.694
+product-gateway (DMZ NZ)	0.021
+Punch Out Integration (DMZ AU)	0
+Punch Out Integration (DMZ NZ)	0
+Punch-Out Cart Service (DMZ AU)	0.0932
+Punch-Out Cart Service (DMZ NZ)	0.0013
+Purchase Order Claims Service (AU)	0
+Purchase Order Claims Service (NZ)	0
+Purchase Order Receipt Events (AU)	0
+Purchase Order Receipt Events (NZ)	0
+Purchase Order Receipts Service (AU)	0
+Purchase Order Receipts Service (NZ)	0
+Purchase Order Service (AU)	4.29
+Purchase Order Service (NZ)	1.9
+Purchase Orders (AU)	6.49
+Purchase Orders (NZ)	1.44
+Quantity Break Application prod_au	0.0541
+Quantity Break Application prod_nz	0.0015
+QuickPay Application (DMZ AU)	2.29
+QuickPay Application (DMZ NZ)	0.141
+Quote Entry Backend (AU)	746
+Quote Entry Backend (NZ)	36.7
+Quote Event (AU)	0.0039
+Quote Event (NZ)	0.0011
+Quote Price File (AU)	39.7
+Quote Price File (NZ)	36.2
+Quote Release (AU)	87.1
+Quote Release (NZ)	35.5
+Quote Service (AU)	190
+Quote Service (DMZ AU)	29
+Quote Service (DMZ NZ)	26.1
+Quote Service (NZ)	44.4
+quote-gateway (DMZ AU)	0.0074
+quote-gateway (DMZ NZ)	0
+RDS Query (AU)	0.327
+RDS Query (DMZ AU)	22.8
+RDS Query (DMZ NZ)	1.38
+RDS Query (NZ)	0.0408
+RDS REST (AU)	470
+RDS REST (DMZ AU)	427
+RDS REST (DMZ NZ)	41.6
+RDS REST (NZ)	38.6
+RDS Service (DMZ AU)	5.56
+RDS Service (DMZ NZ)	5.94
+RDS System Service (AU)	7.08
+RDS Vehicle Check UI Service (DMZ AU)	0
+RDS Vehicle Check UI Service (DMZ NZ)	0
+Rebate Service prod_au	0.0092
+Rebate Service prod_nz	0.0047
+rebate-maintenance prod_au	0.0053
+rebate-maintenance prod_nz	0.0012
+Reece Website CMS (AU)	82.5
+Reece Website CMS (NZ)	4.92
+Reece Website CMS Legacy (AU)	23.9
+Reece Website CMS Legacy (NZ)	15.3
+reece-connect-stateless-sftp-service (DMZ AU)	0
+reece-connect-stateless-sftp-service (DMZ NZ)	0
+Region Service (AU)	0.0124
+Region Service (NZ)	0.0008
+Replenishment Service (AU)	0.0001
+Replenishment Service (NZ)	0.0001
+Roofing Calculator (AU)	0.317
+Roofing Calculator (NZ)	0
+Sales Order Entry (AU)	0.0097
+Sales Order Entry (NZ)	0.0002
+Sales Order Event (AU)	0.0021
+Sales Order Event (NZ)	0
+Salespersons Service prod_au	0.0507
+Salespersons Service prod_nz	0.0014
+sap-price-service prod_au	4.58
+sap-price-service prod_nz	0.398
+sap-price-service trsonline_dmzprod_au	0.414
+sap-price-service trsonline_dmzprod_nz	0.0122
+Service Worker Backend (AU)	0
+Service Worker Backend (NZ)	0
+Shared Invoices profile	0
+Site Address Service prod_au	0.015
+Site Address Service prod_nz	0.0005
+SMS Service (AU)	0
+SMS Service (NZ)	0
+Statement Service (AU)	3.69
+Statement Service (DMZ AU)	3.02
+Statement Service (DMZ NZ)	2.25
+Statement Service (NZ)	2.09
+Stock Revaluation (AU)	0
+Stock Revaluation (NZ)	0
+Stock Take Dashboard (AU)	4.09
+Stock Take Dashboard (NZ)	0.222
+Store Finder Service (DMZ AU)	21.8
+Store Finder Service (DMZ NZ)	1.17
+Storefinder UI service (DMZ AU)	2.31
+Storefinder UI service (DMZ NZ)	0.0451
+Suburb Service (AU)	76.5
+Suburb Service (DMZ AU)	0.532
+Suburb Service (DMZ NZ)	0.0411
+Suburb Service (NZ)	3.86
+Supplier EDI Integration (AU)	0.621
+Supplier Service (AU)	218
+Supplier Service (NZ)	9.86
+Top Products Cache Builder Service (AU)	0
+Top Products Cache Builder Service (NZ)	0
+TRS App Access prod_au	0.0011
+TRS App Access prod_nz	0.0005
+TRS Menu prod_au	98.3
+TRS Menu prod_nz	6.16
+TRS Online Account Payment Service (AU)	0.0043
+TRS Online Account Payment Service (DMZ AU)	3.76
+TRS Online Account Payment Service (DMZ NZ)	0.376
+TRS Online Account Payment Service (NZ)	0.0001
+TRS online Audit Service (DMZ AU)	0
+TRS online Audit Service (DMZ NZ)	0
+TRS Online Components (DMZ AU)	53.6
+TRS Online Components (DMZ NZ)	48.1
+TRS Online Flexitrak Service (DMZ AU)	0
+Trs Online Identity Application (DMZ AU)	34.1
+Trs Online Identity Application (DMZ NZ)	7.65
+TRS Online Invoice Service (DMZ AU)	7.68
+TRS Online Invoice Service (DMZ NZ)	0.652
+TRS Online Mobile Analytics Service (DMZ AU)	140
+TRS Online Mobile Analytics Service (DMZ NZ)	6.96
+TRS Online Mobile Analytics UI Service (DMZ AU)	80
+TRS Online Mobile Analytics UI Service (DMZ NZ)	3.91
+TRS Online Mobile Delivery Event Service (DMZ AU)	0
+TRS Online Mobile Delivery Event Service (DMZ NZ)	0
+TRS Online Mobile Flashing Designer UI Service (DMZ AU)	0.503
+TRS Online Mobile Flashing Designer UI Service (DMZ NZ)	0.0005
+TRS Online Mobile Flexitrak UI Service (DMZ AU)	0.284
+TRS Online Mobile Notification Service (DMZ AU)	3.83
+TRS Online Mobile Notification Service (DMZ NZ)	0.0706
+TRS Online Mobile UI Service (DMZ AU)	157
+TRS Online Mobile UI Service (DMZ NZ)	7.43
+TRS Online NPS Service (DMZ AU)	0.0089
+TRS Online NPS Service (DMZ NZ)	0
+TRS Online Payment Application (DMZ AU)	0
+TRS Online Payment Application (DMZ NZ)	0
+TRS Online Payment Service (AU)	1.86
+TRS Online Payment Service (DMZ AU)	5.19
+TRS Online Payment Service (DMZ NZ)	0.246
+TRS Online Payment Service (NZ)	0.0891
+TRS Online Presentation Support Service (DMZ AU)	21.8
+TRS Online Presentation Support Service (DMZ NZ)	3.7
+TRS Online Pricing Widget Component	26.8
+TRS Online Product Category Pages (DMZ AU)	0.573
+TRS Online Product Category Pages (DMZ NZ)	0.0074
+TRS Online Product Content Service (DMZ AU)	0.11
+TRS Online Product Content Service (DMZ NZ)	0.0045
+TRS Online Product ECommerce Control Service (DMZ AU)	29.2
+TRS Online Product ECommerce Control Service (DMZ NZ)	0.13
+TRS Online Product Pages Application (DMZ AU)	176
+TRS Online Product Pages Application (DMZ NZ)	8.68
+TRS Online Product Search Application (DMZ AU)	682
+TRS Online Product Search Application (DMZ NZ)	34.7
+TRS Online Product Service (DMZ AU)	394
+TRS Online Product Service (DMZ NZ)	10.3
+TRS Online Product UI Service (DMZ AU)	261
+TRS Online Product UI Service (DMZ NZ)	10.2
+TRS Online Retail Order (DMZ AU)	174
+TRS Online Retail Quote (DMZ AU)	0.049
+TRS Online SEO Service (DMZ AU)	3.79
+TRS Online SEO Service (DMZ NZ)	0.937
+TRS Online Shared Services (DMZ AU)	0
+TRS Online Shared Services (DMZ NZ)	0
+TRS Online User Management Application (DMZ AU)	2.2
+TRS Online User Management Application (DMZ NZ)	0.811
+TRS Online User Service (AU)	0.0195
+TRS Online User Service (DMZ AU)	218
+TRS Online User Service (DMZ NZ)	27.4
+TRS Online User Service (NZ)	0.0018
+TRS Online Wishlist Application (DMZ AU)	0.888
+Units of Measurement BFF (AU)	0.0008
+Units of Measurement BFF (NZ)	0.0006
+Units of Measurement Service (AU)	0.0009
+Units of Measurement Service (NZ)	0.0006
+Users Service prod_au	0
+Users Service prod_au (Go)	1560
+Users Service prod_nz	0
+Users Service prod_nz (Go)	115
+Users Service trsonline_dmzprod_au	0
+Users Service trsonline_dmzprod_nz	0
+Voice Pick (AU)	2.01
+Warehouse Integration (AU)	0.0027
+Warehouse Management System Service (AU)	0.685
+Warehouse Management System Service (NZ)	0.0001
+Warehouse Management UI Service (AU)	0.0159
+Webpush Notification Service (AU)	26.6
+Webpush Notification Service (NZ)	2.02
+WIPs Service prod_au	0.232
+WIPs Service prod_nz	0.0035
+xero-invoice-integration (AU)	0
+xero-invoice-integration (NZ)	0

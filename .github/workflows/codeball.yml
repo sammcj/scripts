@@ -4,6 +4,12 @@ name: Codeball
 
 on:
   pull_request:
+    branches:
+      - main
+      - master
+      - "!repo-sync/**"
+      - "!renovate/**"
+      - "!update/pre-commit-hooks/**"
   workflow_dispatch:
 
 permissions:
@@ -12,9 +18,15 @@ permissions:
   pull-requests: write
   checks: write
 
+# One build per branch, cancel out of date builds
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   codeball-review:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
     name: Run Codeball Code Review
     steps:
       - name: Codeball AI Actions
