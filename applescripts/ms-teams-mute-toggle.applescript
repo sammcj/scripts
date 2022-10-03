@@ -5,19 +5,17 @@
 tell application "Microsoft Teams"
 	reopen
 	activate
-
+	
 	tell application "System Events"
 		-- Get the frontmost app's *process* object.
 		set frontAppProcess to first application process whose frontmost is true
 	end tell
-
+	
 	tell frontAppProcess
-	-- Get the first window that isn't the main window.
-		if count of windows > 0 then
-			set window_name to name of front window
-		end if
+		-- Get the first window that isn't the main window.
+		set window_name to name of front window
 	end tell
-
+	
 	tell window window_name
 		activate
 		-- Toggle mute.
