@@ -2,7 +2,6 @@
 tell application "Microsoft Teams"
 	reopen
 	activate
-	set frontmost to true # If enabled brings teams window to foreground
 end tell
 
 tell application "System Events" to keystroke "m" using {shift down, command down}
