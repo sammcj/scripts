@@ -1,13 +1,6 @@
 #### THIS FILE IS MANAGED BY AN AUTOMATED WORKFLOW ####
 
-# This is the same as ../.gitignore for JS/TS/Java/Python projects, except for the top block for files required by github-actions
-
-### START GITHUB ACTIONS FILES ###
-
-!**/node_modules
-!**/dist
-
-### END GITHUB ACTIONS FILES ###
+# This is a generic .gitignore for JS/TS/Java/Python projects
 
 # Inverse matchs to ensure these aren't ignored
 !*.env.template
@@ -22,6 +15,9 @@
 **/*.tsbuildinfo
 **/cdk.context.json
 **/cdk.out
+
+# NodeJS
+**/node_modules
 
 # Test and coverage output
 **/coverage/
@@ -171,6 +167,15 @@ Gemfile.lock
 # Bootstrap files
 *private*.rc
 redo_aliases
+
+# Local .terraform directories
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
 # Docker
 **/docker-compose.override.y*ml
