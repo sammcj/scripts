@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["github>sammcj/renovate-config"],
-  "description": "This file is managed in template-repo",
+  "description": "This file is managed in automation-repo",
   "assignees": ["sammcj"],
   "ignorePaths": [
     ".github/workflows/codeball.yml",

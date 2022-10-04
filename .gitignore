@@ -18,6 +18,7 @@
 
 # NodeJS
 **/node_modules
+node_modules/**
 
 # Test and coverage output
 **/coverage/
@@ -166,6 +167,7 @@ Gemfile.lock
 
 # Bootstrap files
 *private*.rc
+.gitconfig.private
 redo_aliases
 
 # Local .terraform directories
