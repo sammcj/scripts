@@ -9,6 +9,7 @@ on:
       - "**/*.tf.*"
       - "**/*.tfvars.*"
       - "**/*.terraform.*"
+      - "!**/node_modules/**"
     branches:
       - main
       - master

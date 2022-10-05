@@ -22,6 +22,7 @@ on:
       - "!update/pre-commit-hooks/**"
     paths-ignore:
       - ".github/**"
+      - "!**/node_modules/**"
 
 # One build per branch, cancel out of date builds
 concurrency:

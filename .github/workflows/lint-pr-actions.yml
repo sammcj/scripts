@@ -16,6 +16,7 @@ on:
       - "!update/pre-commit-hooks/**"
     paths:
       - ".github/**"
+      - "!**/node_modules/**"
 
 permissions:
   contents: read
