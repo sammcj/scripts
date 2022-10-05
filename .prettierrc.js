@@ -6,8 +6,13 @@ module.exports = {
       files: ['*.yml', '*.yaml'],
       options: { singleQuote: false },
     },
+    {
+      files: ['Makefile'],
+      options: { useTabs: true },
+    },
   ],
   tabWidth: 2,
+  useTabs: false,
   singleQuote: true,
   trailingComma: 'all',
   semi: true,
