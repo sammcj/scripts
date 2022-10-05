@@ -7,6 +7,7 @@ on:
     paths:
       - "**/Dockerfile.*"
       - "**/docker-compose.*"
+      - "!**/node_modules/**"
     branches:
       - main
       - master

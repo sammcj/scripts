@@ -49,4 +49,14 @@ module.exports = {
     'no-underscore-dangle': 'off',
     'lines-between-class-members': ['error', 'always', { exceptAfterSingleLine: true }],
   },
+  ignorePatterns: [
+    '!**/*.eslintrc.js*',
+    '!**/*.prettierrc.js*',
+    '**/node_modules/**',
+    '**/dist/**',
+    '**/build/**',
+    '**/coverage/**',
+    '**/cdk.out/**',
+    'jest.setup.ts',
+  ],
 };

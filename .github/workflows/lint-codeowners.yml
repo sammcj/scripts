@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - "**/CODEOWNERS"
+      - "!**/node_modules/**"
     branches:
       - main
       - master
