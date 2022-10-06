@@ -1,0 +1,118 @@
+fragment branchProtection on BranchProtectionRule {
+  allowsDeletions
+  allowsForcePushes
+  creator {
+    login
+  }
+  id
+  isAdminEnforced
+  requiredStatusCheckContexts
+  requiredApprovingReviewCount
+  requiresApprovingReviews
+  requiresCodeOwnerReviews
+  requiresStatusChecks
+  restrictsPushes
+  restrictsReviewDismissals
+  dismissesStaleReviews
+  pattern
+}
+
+fragment repositoryPaging on RepositoryConnection {
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+  totalCount
+}
+
+query listAllReposInOrg($orgLogin: String!, $endCursor: String) {
+  organization(login: $orgLogin) {
+    repositories(first: 100, after: $endCursor) {
+      nodes {
+        name
+      }
+      ...repositoryPaging
+    }
+  }
+}
+
+query allOrgRepoDirectCollaborators($orgLogin: String!, $endCursor: String) {
+  organization(login: $orgLogin) {
+    repositories(first: 100, after: $endCursor) {
+      nodes {
+        name
+        isArchived
+        collaborators(affiliation: DIRECT) {
+          edges {
+            node {
+              login
+            }
+            permission
+            permissionSources {
+              permission
+              source {
+                __typename
+                ... on Organization {
+                  login
+                }
+                ... on Repository {
+                  name
+                }
+                ... on Team {
+                  slug
+                }
+              }
+            }
+          }
+        }
+      }
+      ...repositoryPaging
+    }
+  }
+}
+
+query showBranchProtection($owner: String!, $repo: String!) {
+  repository(name: $repo, owner: $owner) {
+    id
+    name
+    branchProtectionRules(first: 10) {
+      totalCount
+      nodes {
+        ...branchProtection
+      }
+    }
+  }
+}
+
+mutation addBranchProtection(
+  $repositoryId: ID!
+  $branchPattern: String!
+  $requiredStatusChecks: [String!]
+) {
+  createBranchProtectionRule(
+    input: {
+      allowsDeletions: false
+      allowsForcePushes: false
+      dismissesStaleReviews: true
+      isAdminEnforced: false
+      pattern: $branchPattern
+      repositoryId: $repositoryId
+      requiresApprovingReviews: true
+      requiredApprovingReviewCount: 1
+      requiresCodeOwnerReviews: true
+      requiredStatusCheckContexts: $requiredStatusChecks
+      requiresStatusChecks: true
+      restrictsReviewDismissals: false
+    }
+  ) {
+    branchProtectionRule {
+      ...branchProtection
+    }
+  }
+}
+
+mutation deleteBranchProtection($ruleId: ID!) {
+  deleteBranchProtectionRule(input: { branchProtectionRuleId: $ruleId }) {
+    clientMutationId
+  }
+}
