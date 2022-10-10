@@ -13,8 +13,8 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+      - uses: actions/setup-node@969bd2663942d722d85b6a8626225850c2f7be4b # tag=v3
         name: Set up Node.js
         with:
           node-version: ${{ .nvmrc }}
@@ -22,7 +22,7 @@ jobs:
       # Bump version
       - name: Bump version and push tag
         id: tag_version
-        uses: mathieudutour/github-tag-action@v6.0
+        uses: mathieudutour/github-tag-action@d745f2e74aaf1ee82e747b181f7a0967978abee0 # tag=v6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           release_branches: main
@@ -30,7 +30,7 @@ jobs:
 
       # Publish
       - name: Create a GitHub release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@4c75f0f2e4ae5f3c807cf0904605408e319dcaac # tag=v1
         with:
           tag: ${{ steps.tag_version.outputs.new_tag }}
           name: Release ${{ steps.tag_version.outputs.new_tag }}
