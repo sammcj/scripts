@@ -12,7 +12,7 @@ on:
 permissions:
   contents: read
   actions: read
-  secrets: read
+  secrets: read # pragma: allowlist secret
 
 # One build per branch, cancel out of date builds
 concurrency:
