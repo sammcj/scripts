@@ -23,5 +23,14 @@ jobs:
     steps:
       - uses: "actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b" # tag=v3
       - name: "Check for TODOs and create or update issues"
-        uses: "alstr/todo-to-issue-action@fffb31f4fe645d6d79085a3ed46c1879c5543d08" # tag=v4
-        id: "todo"
+        uses: ribtoks/tdg-github-action@master
+        with:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          REF: ${{ github.ref }}
+          EXCLUDE_PATTERN: "node_modules/*"
+          MIN_WORDS: 2
+          MIN_CHARACTERS: 10
+          ADD_LIMIT: 20
+          COMMENT_ON_ISSUES: true
