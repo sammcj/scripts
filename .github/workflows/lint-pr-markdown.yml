@@ -48,5 +48,4 @@ jobs:
           level: error
           filter_mode: added
           fail_on_error: false
-          ### Flags for markdownlint-cli ###
-          # markdownlint_flags: .
+          markdownlint_flags: "'**/*.md' --ignore node_modules --disable MD013"
