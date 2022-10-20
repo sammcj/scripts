@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eo pipefail
+set -emo pipefail
 
 # This script uses aws cli to add tags to a filtered set of s3 objects in a given bucket
 #
@@ -65,7 +65,7 @@ printObjects() {
       ((i++ == 0)) && wait
       echo "Current tags for object '${OBJECT}':"
       aws s3api get-object-tagging --bucket "$BUCKET_NAME" --key "$OBJECT" --query "TagSet[?Key=='$KEY'].Value" --output text &
-    done && fg
+    done
   )
 }
 
