@@ -4,6 +4,7 @@
 
 # Inverse matchs to ensure these aren't ignored
 !*.env.template
+!*.template.env
 !*.eslintrc.js
 !*.prettierrc.js
 !*.config.js
@@ -95,8 +96,10 @@ tmp/
 # Local state files / misc
 .dynamodb/
 .eslintcache
+.env
 .fusebox/
 .grunt
+.local
 .lock-wscript
 .next
 .node_repl_history
