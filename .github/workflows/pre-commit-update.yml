@@ -16,15 +16,15 @@ jobs:
   pre-commit-update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
-      - uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5 # tag=v4
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+      - uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984 # tag=v4
       - uses: actions/setup-node@v3
         with:
           node-version: 16
       - run: |
           npm install -g npm eslint prettier eslint-config-prettier eslint-plugin-deprecation eslint-plugin-import eslint-plugin-unused-imports
       - uses: browniebroke/pre-commit-autoupdate-action@main
-      - uses: peter-evans/create-pull-request@671dc9c9e0c2d73f07fa45a3eb0220e1622f0c5f # tag=v4
+      - uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7 # tag=v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: update/pre-commit-hooks
