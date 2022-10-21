@@ -41,13 +41,14 @@ usage() {
                                             or
                                               --repositories-file [file containing repositories on each line]
                                             )
+                                            --FORCE [true|false]
         Example:
               ./github-branch-protection.sh --action backup --pattern 'main' --owner 'myOrg' --repositories 'repo-1 repo-2'
               ./github-branch-protection.sh --action backup --pattern 'main' --owner 'myOrg' --repositories-file repositories.txt"
   exit 1
 }
 
-PARSED_ARGUMENTS=$(getopt -a -n alphabet -o a:r:p:o:f: --long action:,repositories:,pattern:,owner:,repositories-file: -n 'github-gp.sh' -- "$@")
+PARSED_ARGUMENTS=$(getopt -a -n alphabet -o a:r:p:o:f: --long action:,repositories:,pattern:,owner:,repositories-file:,FORCE -n 'github-branch-protection.sh' -- "$@")
 VALID_ARGUMENTS=$?
 if [ "$VALID_ARGUMENTS" != "0" ]; then
   usage
@@ -80,6 +81,10 @@ while :; do
   -o | --owner)
     OWNER="$2"
     shift
+    shift
+    ;;
+  --FORCE)
+    FORCE=true
     shift
     ;;
   --)
@@ -145,12 +150,7 @@ function delete_rule {
     echo "No existing branch protection rule found matching '$PATTERN'"
   fi
 
-  echo "Are you sure you want to delete the branch protection rule with ID '${branchProtectionRuleId}', matching '$PATTERN' on repository '$REPO'? [y/N]"
-  read -r confirm
-  if [[ "$confirm" != "y" ]]; then
-    echo "Aborting"
-    exit 1
-  fi
+  confirm "Are you sure you want to delete the branch protection rule with ID '${branchProtectionRuleId}', matching '$PATTERN' on repository '$REPO'?" "echo confirmed..."
 
   gh api graphql -f query="$(cat github-branch-protection.graphql)" \
     -f operationName=deleteBranchProtection \
@@ -163,16 +163,27 @@ function backup_rules {
   # Check if the backup file already exists, if it does prompt the user to overwrite it, otherwise create it
   if [[ -f "$BACKUP_FILE" ]]; then
     ls -l "$BACKUP_FILE"
-    echo "Backup file already exists, overwrite? [y/N]"
-    read -r confirm
-    if [[ "$confirm" == "y|Y" ]]; then
-      rm -f "$BACKUP_FILE"
-    fi
+    confirm "Backup file already exists, overwrite?" "rm -f $BACKUP_FILE"
   fi
 
   get_rules | jq -r '.data.repository.branchProtectionRules.nodes[]' >"$BACKUP_FILE"
   echo "Created backup file: ${BACKUP_FILE}"
+}
 
+#
+function confirm {
+  if [[ "$FORCE" == true ]]; then
+    $2
+  fi
+
+  echo "$1 [y/N]"
+  read -r confirm
+  if [[ "$confirm" == "y" ]]; then
+    $2
+  else
+    echo "Aborting..."
+    exit 1
+  fi
 }
 
 function run_action {
@@ -198,6 +209,9 @@ function run_action {
 }
 
 ### Main ###
+if $FORCE; then
+  echo "Running with FORCE = true, will not prompt for confirmation!"
+fi
 
 for REPO in "${REPOS_ARRAY[@]}"; do
   echo "REPO: ${REPO}"

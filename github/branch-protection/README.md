@@ -35,6 +35,7 @@ Defaults:
                               or
                                 --repositories-file [file containing repositories on each line]
                               )
+                              --FORCE [true|false]
 ```
 
 Example:
