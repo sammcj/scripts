@@ -184,3 +184,12 @@ override.tf.json
 
 # Docker
 **/docker-compose.override.y*ml
+
+# Hugo
+/public/
+/resources/_gen/
+/assets/jsconfig.json
+hugo_stats.json
+hugo.linux
+hugo.darwin
+/.hugo_build.lock
