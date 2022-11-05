@@ -49,3 +49,15 @@ jobs:
           filter_mode: added
           fail_on_error: false
           markdownlint_flags: "'**/*.md' --ignore node_modules --disable MD013"
+
+  check-markdown-links:
+    name: Check Markdown Links
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+      - name: markdown-link-check
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          check-modified-files-only: 'yes'
+          use-verbose-mode: 'yes'
