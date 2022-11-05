@@ -2,14 +2,15 @@
 
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+
+exclude: '(^themes.*|^static/files/.*)'
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.3.0
     hooks:
       - id: trailing-whitespace
-      - id: end-of-file-fixer
       - id: check-yaml
-        files: \.yaml$
+        files: \.yaml$, \.yml$
         types: [file]
       - id: check-case-conflict
       - id: check-json
@@ -22,11 +23,14 @@ repos:
       - id: check-xml
         files: \.xml$
         types: [file]
-      - id: detect-private-key
-      # - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: [ --fix=no ]
+      - id: pretty-format-json
+        files: '!htmltest_output/refcache.json$'
 
   - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.25.0
+    rev: v8.26.0
     hooks:
       - id: eslint
         files: \.[jt]sx?$ # *.js, *.jsx, *.ts and *.tsx
