@@ -19,7 +19,7 @@ concurrency:
 jobs:
   todo-issues:
     runs-on: "ubuntu-22.04"
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: "actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8" # tag=v3
       - name: "Check for TODOs and create or update issues"
@@ -29,7 +29,7 @@ jobs:
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
           REF: ${{ github.ref }}
-          EXCLUDE_PATTERN: "node_modules/*"
+          EXCLUDE_PATTERN: ".*(node_modules/|dist/|bin/|files/|themes/).*"
           MIN_WORDS: 2
           MIN_CHARACTERS: 10
           ADD_LIMIT: 20

@@ -33,6 +33,6 @@ jobs:
   lint-actions-workflows:
     name: Lint Actions Workflows
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - run: echo "This workflow is a placeholder for PRs that don't require linting of Github Actions workflows"
