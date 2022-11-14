@@ -1,0 +1,84 @@
+name: Delete Disabled and Obsolete Workflows
+
+on:
+  workflow_dispatch:
+    inputs:
+      github-token:
+        description: 'Custom GitHub Token, to not be rate limited to 1,000 requests, defaults to GITHUB_TOKEN'
+        required: false
+      purge-obsoletes:
+        description: 'Delete obsolete workflows, defaults to true'
+        required: false
+        default: "true"
+      delete-disabled:
+        description: 'Delete disabled workflows, defaults to true'
+        required: false
+        default: "true"
+    schedule:
+      # run twice a week on Sunday and Thursday at 00:00
+      - cron: '0 0 * * 0,4'
+
+env:
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  delete-obsolete-workflows:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    if: ${{ github.event.inputs.purge-obsoletes == "true" }}
+    steps:
+        - uses: otto-contentfactory/purge-workflow-runs@v1
+          with:
+            token: ${{ inputs.github-token || secrets.GITHUB_TOKEN }}
+
+  delete-disabled-workflows:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    if: ${{ github.event.inputs.delete-disabled == "true" }}
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          github-token: ${{ inputs.github-token || secrets.GITHUB_TOKEN }}
+          script: |
+            const githubContext = {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            }
+
+            const disabledWorkflows = await github.paginate(
+              github.rest.actions.listRepoWorkflows,
+              githubContext
+            ).then(workflows => workflows.filter(workflow => workflow.state == 'disabled_manually'))
+
+            console.log('::group::List of disabled workflows')
+            console.log(disabledWorkflows)
+            console.log('::endgroup::')
+
+            for (const workflow of disabledWorkflows) {
+              const runs = await github.paginate(
+                github.rest.actions.listWorkflowRuns,
+                {
+                  ...githubContext,
+                  workflow_id: workflow.id,
+                }
+              )
+
+              console.log(`::group::Workflow #${workflow.id} >> Runs`)
+              console.log(runs)
+              console.log('::endgroup::')
+
+              for (const run of runs) {
+                const response = await github.rest.actions.deleteWorkflowRun({
+                  ...githubContext,
+                  run_id: run.id,
+                })
+
+                console.log(`::group::Workflow #${workflow.id} >> Run #${run.id} >> Delete`)
+                console.log(response)
+                console.log('::endgroup::')
+              }
+            }
