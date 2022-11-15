@@ -1,2 +1,4 @@
 branch-protection-rules*.json
 repos.txt
+testrepos.txt
+backups/

@@ -10,6 +10,7 @@ fragment branchProtection on BranchProtectionRule {
   requiredApprovingReviewCount
   requiresApprovingReviews
   requiresCodeOwnerReviews
+  requiresConversationResolution
   requiresStatusChecks
   restrictsPushes
   restrictsReviewDismissals
@@ -71,7 +72,7 @@ query allOrgRepoDirectCollaborators($orgLogin: String!, $endCursor: String) {
   }
 }
 
-query showBranchProtection($owner: String!, $repo: String!) {
+query showBranchProtection($owner:String!, $repo:String!) {
   repository(name: $repo, owner: $owner) {
     id
     name
@@ -84,35 +85,30 @@ query showBranchProtection($owner: String!, $repo: String!) {
   }
 }
 
-mutation addBranchProtection(
-  $repositoryId: ID!
-  $branchPattern: String!
-  $requiredStatusChecks: [String!]
-) {
-  createBranchProtectionRule(
-    input: {
-      allowsDeletions: false
-      allowsForcePushes: false
-      dismissesStaleReviews: true
-      isAdminEnforced: false
-      pattern: $branchPattern
-      repositoryId: $repositoryId
-      requiresApprovingReviews: true
-      requiredApprovingReviewCount: 1
-      requiresCodeOwnerReviews: true
-      requiredStatusCheckContexts: $requiredStatusChecks
-      requiresStatusChecks: true
-      restrictsReviewDismissals: false
-    }
-  ) {
+mutation addBranchProtection($repositoryId:ID!, $branchPattern:String!, $requiredStatusChecks:[String!]) {
+  createBranchProtectionRule(input: {
+    allowsDeletions: false
+    allowsForcePushes:false
+    dismissesStaleReviews:true
+    isAdminEnforced:false
+    pattern: $branchPattern
+    repositoryId: $repositoryId
+    requiresApprovingReviews:true
+    requiredApprovingReviewCount:1
+    requiresCodeOwnerReviews:true
+    requiresConversationResolution:true
+    requiredStatusCheckContexts:$requiredStatusChecks
+    requiresStatusChecks:true
+    restrictsReviewDismissals:false
+  }) {
     branchProtectionRule {
       ...branchProtection
     }
   }
 }
 
-mutation deleteBranchProtection($ruleId: ID!) {
-  deleteBranchProtectionRule(input: { branchProtectionRuleId: $ruleId }) {
+mutation deleteBranchProtection($ruleId:ID!) {
+  deleteBranchProtectionRule(input:{branchProtectionRuleId:$ruleId}) {
     clientMutationId
   }
 }

@@ -19,12 +19,15 @@ Defaults:
       requiresApprovingReviews: true
       requiredApprovingReviewCount: 1
       requiresCodeOwnerReviews: true
+      requiresConversationResolution:true
       requiredStatusCheckContexts: $requiredStatusChecks
       requiresStatusChecks: true
       restrictsReviewDismissals: false
 ```
 
 ## Usage
+
+NOTE: See Alternative script and usage below for an alternative script.
 
 ```bash
 ./github-branch-protection.sh --action [backup|create|delete]
@@ -60,6 +63,18 @@ You can add them manually via the Github UI or via a CURL request along the line
 ```bash
 jq -n '{"required_status_checks":{"strict":true,"contexts":["lint-pr / lint, coverage","lint-and-test (dev, 1234567890)","build-shared (test, 2345678901)"]}}' \
   | gh api -X PUT repos/ --input - "${OWNER}/${REPO}/branches/${branchPattern}/protection"
+```
+
+## Alternative Script
+
+```shell
+for repo in $(cat repos.txt); do
+  ./alt-branch-protection.sh github.com my-org $repo post-release-8-holder \
+  requiresApprovingReviews=true requiresCodeOwnerReviews=true requiredApprovingReviewCount=1 \
+    requiresStatusChecks=true requiresStrictStatusChecks=false requiresLinearHistory=true \
+    dismissesStaleReviews=true \
+    requiredStatusCheckContexts="Merge check"
+done
 ```
 
 ## Links

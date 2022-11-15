@@ -17,6 +17,7 @@ set -eo pipefail
 #       requiresApprovingReviews: true
 #       requiredApprovingReviewCount: 1
 #       requiresCodeOwnerReviews: true
+#       requiresConversationResolution:true
 #       requiredStatusCheckContexts: $requiredStatusChecks
 #       requiresStatusChecks: true
 #       restrictsReviewDismissals: false
@@ -138,10 +139,12 @@ function backup_rules {
 }
 
 function create_rule {
+  # statusChecks=("Merge check" "Lint")
   gh api graphql -f query="$(cat github-branch-protection.graphql)" \
     -f operationName=addBranchProtection \
-    -f PATTERN="$PATTERN" \
+    -f branchPattern="$PATTERN" \
     -f repositoryId="$repositoryId"
+  # -f requiredStatusChecks="$statusChecks"
   # TODO: add contexts, see note at top of file
 }
 
@@ -156,14 +159,18 @@ function delete_rule {
     -f operationName=deleteBranchProtection \
     -f ruleId="$branchProtectionRuleId" \
     -f repositoryId="$repositoryId"
+  #  -F owner=:owner -F repo=:repo
 }
 
 function backup_rules {
-  BACKUP_FILE="branch-protection-rules-${REPO}-$(date +%Y%m%d).json"
+  mkdir -p backups
+  BACKUP_FILE="backups/branch-protection-rules-${REPO}-$(date +%Y%m%d).json"
   # Check if the backup file already exists, if it does prompt the user to overwrite it, otherwise create it
-  if [[ -f "$BACKUP_FILE" ]]; then
+  if [[ -f "$BACKUP_FILE" ]] && [[ "$FORCE" != true ]]; then
     ls -l "$BACKUP_FILE"
     confirm "Backup file already exists, overwrite?" "rm -f $BACKUP_FILE"
+  elif [[ "$FORCE" == true ]]; then
+    rm -f "$BACKUP_FILE"
   fi
 
   get_rules | jq -r '.data.repository.branchProtectionRules.nodes[]' >"$BACKUP_FILE"
@@ -174,15 +181,15 @@ function backup_rules {
 function confirm {
   if [[ "$FORCE" == true ]]; then
     $2
-  fi
-
-  echo "$1 [y/N]"
-  read -r confirm
-  if [[ "$confirm" == "y" ]]; then
-    $2
   else
-    echo "Aborting..."
-    exit 1
+    echo "$1 [y/N]"
+    read -r confirm
+    if [[ "$confirm" == "y" ]]; then
+      $2
+    else
+      echo "Aborting..."
+      exit 1
+    fi
   fi
 }
 
@@ -190,6 +197,9 @@ function run_action {
   case "$ACTION" in
   backup)
     backup_rules
+    ;;
+  get)
+    get_rules | jq -r '.data.repository.branchProtectionRules.nodes[]'
     ;;
   create)
     backup_rules
