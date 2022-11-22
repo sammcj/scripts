@@ -30,7 +30,7 @@ repos:
         files: '!htmltest_output/refcache.json$'
 
   - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.26.0
+    rev: v8.28.0
     hooks:
       - id: eslint
         files: \.[jt]sx?$ # *.js, *.jsx, *.ts and *.tsx
