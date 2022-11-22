@@ -69,6 +69,10 @@
   color: "123000"
   aliases: ["patch-update"]
 
+- name: "comments"
+  color: "4360d5"
+  aliases: ["comment", "blog-comments"]
+
 - name: "sync-files"
   color: "130000"
 
