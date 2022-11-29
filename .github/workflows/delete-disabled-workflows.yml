@@ -14,12 +14,9 @@ on:
         description: 'Delete disabled workflows, defaults to true'
         required: false
         default: "true"
-    schedule:
-      # run twice a week on Sunday and Thursday at 00:00
-      - cron: '0 0 * * 0,4'
-
-env:
-  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  schedule:
+    # run twice a week on Sunday and Thursday at 00:00
+    - cron: '0 0 * * 0,4'
 
 permissions:
   actions: write
