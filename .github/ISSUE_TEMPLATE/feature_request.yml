@@ -10,7 +10,7 @@ body:
     attributes:
       label: "Start Date"
       description: Start of development
-      placeholder: "month/day/year"
+      placeholder: "year-month-day"
     validations:
       required: false
   - type: textarea
@@ -36,7 +36,7 @@ body:
       description: Provide a brief explanation of the feature
       placeholder: Describe in a few lines your feature request
     validations:
-      required: true
+      required: false
   - type: textarea
     id: basic_example
     attributes:
@@ -44,7 +44,7 @@ body:
       description: Indicate here some basic examples of your feature.
       placeholder: A few specific words about your feature request.
     validations:
-      required: true
+      required: false
   - type: textarea
     id: drawbacks
     attributes:
@@ -52,7 +52,7 @@ body:
       description: What are the drawbacks/impacts of your feature request ?
       placeholder: Identify the drawbacks and impacts while being neutral on your feature request
     validations:
-      required: true
+      required: false
   - type: textarea
     id: unresolved_question
     attributes:
