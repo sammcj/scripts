@@ -3,6 +3,7 @@
 # This script gets the latest nvidia AMD64 driver from the nvidia website, downloads it, and installs it.
 # It ensure that CentOS 7's devtoolset-11 is used for the latest supported GCC etc...
 # Then it runs nvidia-patch to patch the driver for the stream concurrency limit.
+# Assumptions: scl devtoolset-11 installed (yum install centos-release-scl && scl enable devtoolset-11)
 
 # Set the log file location
 log_file="/var/log/update_nvidia.log"
