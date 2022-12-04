@@ -16,7 +16,7 @@ function get_tags() {
 }
 
 function follow_tag() {
-  curl -s -H "Authorization: Bearer ${MASTODON_ACCESS_TOKEN}" -X POST -d "name=$1" "https://${INSTANCE}/api/v1/tags/${1}/follow"
+  curl -s -H "Authorization: Bearer ${MASTODON_ACCESS_TOKEN}" -X POST -d "name=${1}" "https://${INSTANCE}/api/v1/tags/${1}/follow"
 }
 
 function tag_info() {
@@ -26,20 +26,20 @@ function tag_info() {
 function upload_json() {
   read -rp "Enter the path to the JSON file containing the tags to follow: " json_file
   while IFS= read -r tag; do
-    follow_tag "$tag"
-  done <"$json_file"
+    follow_tag "${tag}"
+  done <"${json_file}"
 }
 
 function compare_tags() {
   ls -1 followed_tags*.json
   read -rp "Enter the path to the JSON file containing the tags to compare: " json_file
   while IFS= read -r tag; do
-    tag_info "$tag"
-  done <"$json_file"
+    tag_info "${tag}"
+  done <"${json_file}"
   current_tags="$(get_tags | jq -r '.[] | .name')"
   echo -e "\n---"
-  echo -e "diff of current tags and $json_file:"
-  diff <(echo "$current_tags") <(echo "$json_file")
+  echo -e "diff of current tags and ${json_file}:"
+  diff <(echo "${current_tags}") <(echo "${json_file}")
 
 }
 
@@ -48,7 +48,7 @@ if [ "$2" ]; then
 fi
 
 if [ "$1" = "backup" ]; then
-  get_tags | jq -r '.[] | .name' >"$BACKUP_FILENAME"
+  get_tags | jq -r '.[] | .name' >"${BACKUP_FILENAME}"
   echo -e "Followed tags saved to ${BACKUP_FILENAME}"
 elif [ "$1" = "add" ]; then
   read -p "Enter a tag to follow: " tag
