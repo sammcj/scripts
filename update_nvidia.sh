@@ -13,6 +13,16 @@ timestamp=$(date)
 # Fetch the latest version number of the NVIDIA Linux AMD64 graphics driver from the download page
 driver_version_number=$(curl -s 'https://www.nvidia.com/Download/processFind.aspx?psid=101&pfid=817&osid=12&lid=2&whql=&lang=en-us&ctk=0&qnfslb=01' | grep -o "[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}.[0-9]\{1,\}" | sort -r | head -n 1)
 
+# Check if the latest version is already installed
+if lspci -nn | grep -oq "VGA compatible controller .* NVIDIA"; then
+  installed_version=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader)
+  if [ "$installed_version" == "$driver_version_number" ]; then
+    # Write the log output to the log file
+    echo "$timestamp: The latest NVIDIA driver is already installed (version: $driver_version_number)" >>$log_file
+    exit 0
+  fi
+fi
+
 # Generate the URL for the driver download
 driver_url="https://uk.download.nvidia.com/XFree86/Linux-x86_64/$driver_version_number/NVIDIA-Linux-x86_64-$driver_version_number.run"
 
