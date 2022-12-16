@@ -39,12 +39,3 @@ body:
         If applicable, add screenshots to help explain your problem.
     validations:
       required: false
-
-  - type: textarea
-    id: environment
-    attributes:
-      label: ⚙️ Environment
-      description: |
-        Action version: [e.g. v1.0.0]
-    validations:
-      required: false
