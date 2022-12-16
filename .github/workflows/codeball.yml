@@ -27,6 +27,7 @@ jobs:
   codeball-review:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
+    if: ${{ !github.event.pull_request.draft }}
     name: Run Codeball Code Review
     steps:
       - name: Codeball AI Actions
