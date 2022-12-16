@@ -31,6 +31,7 @@ jobs:
     name: "Pull Request Labeller"
     runs-on: ubuntu-22.04
     timeout-minutes: 5
+    if: ${{ !github.event.pull_request.draft }}
     steps:
       - uses: fuxingloh/multi-labeler@v2 # tag=v2
         id: pr-labeller

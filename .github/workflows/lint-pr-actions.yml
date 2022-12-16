@@ -32,6 +32,7 @@ jobs:
   lint-actions-workflows:
     name: Lint Actions Workflows
     runs-on: ubuntu-22.04
+    if: ${{ !github.event.pull_request.draft }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
