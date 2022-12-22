@@ -25,3 +25,6 @@
 **/temp
 **/tmp
 **/venv
+
+# Obsidian
+.obsidian
