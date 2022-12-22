@@ -21,5 +21,5 @@ jobs:
       - run: |
           npm install -g npm
           npm ci
-      - uses: actions/setup-python@2c3dd9e7e29afd70cc0950079bde6c979d1f69f9 # v4
+      - uses: actions/setup-python@5ccb29d8773c3f3f653e1705f474dfaa8a06a912 # v4
       - uses: pre-commit/action@646c83fcd040023954eafda54b4db0192ce70507 # tag=v3.0.0
