@@ -17,6 +17,8 @@ permissions:
   issues: write
   pull-requests: write
   checks: write
+  statuses: write
+  actions: read
 
 # One build per branch, cancel out of date builds
 concurrency:
