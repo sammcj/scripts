@@ -16,7 +16,10 @@
     ".github/workflows/pr-labeller.yml",
     ".github/workflows/todo.yml",
     ".github/workflows/workflows_disabled/*.yml",
-    "files/",
-    "themes/"
+    ".github/workflows/delete-disabled-workflows.yml",
+    "files/**",
+    "themes/**",
+    "dist/**",
+    "node_modules/**"
   ]
 }
