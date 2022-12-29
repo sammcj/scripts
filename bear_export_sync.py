@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # encoding=utf-8
 # python3.6
 # bear_export_sync.py
@@ -6,6 +7,7 @@
 '''
 # Markdown export from Bear sqlite database
 Version 1.4, 2020-01-11
+Version 1.5, 2022-12-21 Sams hacks to make it suitable for Obsidian
 modified by: github/andymatuschak, andy_matuschak@twitter, github/sammcj
 original author: github/rovest, rorves@twitter
 
@@ -37,10 +39,10 @@ or leave list empty for all notes: `limit_export_to_tags = []`
 * Or export as textbundles with images included
 '''
 
-make_tag_folders = False  # Exports to folders using first tag only, if `multi_tag_folders = False`
+make_tag_folders = True  # Exports to folders using first tag only, if `multi_tag_folders = False`
 multi_tag_folders = False  # Copies notes to all 'tag-paths' found in note!
                           # Only active if `make_tag_folders = True`
-hide_tags_in_comment_block = True  # Hide tags in HTML comments: `<!-- #mytag -->`
+hide_tags_in_comment_block = False  # Hide tags in HTML comments: `<!-- #mytag -->`
 
 # The following two lists are more or less mutually exclusive, so use only one of them.
 # (You can use both if you have some nested tags where that makes sense)
@@ -247,8 +249,13 @@ def make_text_bundle(md_text, filepath, mod_dt):
 
 def sub_path_from_tag(temp_path, filename, md_text):
     # Get tags in note:
-    pattern1 = r'(?<!\S)\#([.\w\/\-]+)[ \n]?(?!([\/ \w]+\w[#]))'
-    pattern2 = r'(?<![\S])\#([^ \d][.\w\/ ]+?)\#([ \n]|$)'
+    # pattern1 = r'(?<!\S)\#([.\w\/\-]+)[ \n]?(?!([\/ \w]+\w[#]))' # Tags without spaces
+    # the same as above, but ignores tags less than 3 characters long and tags that don't start with a letter
+    pattern1 = r'(?<!\S)\#([a-zA-Z][.\w\/\-]{2,})[ \n]?(?!([\/ \w]+\w[#]))'
+    # pattern2 = r'(?<![\S])\#([^ \d][.\w\/ ]+?)\#([ \n]|$)' # Tags with spaces
+    # the same as above, but ignores tags less than 3 characters long and tags that don't start with a letter
+    pattern2 = r'(?<![\S])\#([a-zA-Z][.\w\/\-]{2,})[ \n]?(?!([\/ \w]+\w[#]))'
+
     if multi_tag_folders:
         # Files copied to all tag-folders found in note
         tags = []
@@ -378,7 +385,7 @@ def write_file(filename, file_content, modified):
         filename = filename[:255]
     print(filename)
         # replace any invalid characters in the filename (e.g. /, \, :, *, ?, ", <, >, |, ·) with an underscore
-    filename = re.sub(r'[\/\\\:\*\?\"\<\>\|\·\.]', '_', filename)
+    # filename = re.sub(r'[\/\\\:\*\?\"\<\>\|\·\.]', '_', filename)
     with open(filename, "w", encoding='utf-8') as f:
         f.write(file_content)
     if modified > 0:
