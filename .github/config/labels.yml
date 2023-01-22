@@ -14,9 +14,25 @@
   color: "293535"
   aliases: ["maintenance", "maint"]
 
+- name: "Bug"
+  color: "b45f06"
+  aliases: ["problem"]
+
+- name: "High"
+  color: "ff0000"
+  aliases: ["high", "urgent", "critical"]
+
+- name: "Medium"
+  color: "6fa8dc"
+  aliases: ["medium"]
+
+- name: "Low"
+  color: "ade0d6"
+  aliases: ["low"]
+
 - name: "Docs"
   color: "7c9e9d"
-  aliases: ["doco", Documentation']
+  aliases: ["doco", "Documentation"]
 
 - name: "CDK"
   color: "ce7e00"
