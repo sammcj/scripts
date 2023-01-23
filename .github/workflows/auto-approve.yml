@@ -1,0 +1,20 @@
+name: Auto approve gha-template-repo-token-generator PRs # and renovate
+
+on:
+  pull_request_target: #Disabling on PRs for now
+  workflow_dispatch:
+
+# One build per branch, cancel out of date builds
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    if: github.actor == 'gha-template-repo-token-generator' # || github.actor == 'renovate[bot]' || github.actor == 'apps/renovate'
+    steps:
+      - uses: hmarr/auto-approve-action@v3

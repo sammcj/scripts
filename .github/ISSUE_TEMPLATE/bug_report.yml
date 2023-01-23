@@ -1,7 +1,7 @@
 #### THIS FILE IS MANAGED BY AN AUTOMATED WORKFLOW ####
 
 name: 🐛 Bug report
-description: Create a report to help us improve
+description: Create a bug report to help us improve
 labels: ["bug"]
 body:
   - type: textarea
@@ -30,6 +30,16 @@ body:
         A description of what you expected to happen.
     validations:
       required: false
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 🤔 Suggestion
+      description: |
+        Any suggestions on how to fix the bug?
+    validations:
+      required: false
+
 
   - type: textarea
     id: screenshots
