@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3
       - name: shellcheck
-        uses: reviewdog/action-shellcheck@66eb2b135834bedc025f2e23e25598cbcb12b3c5 # v1
+        uses: reviewdog/action-shellcheck@f52d78284b4941028952125a10c76676c3d456eb # v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-pr-review
