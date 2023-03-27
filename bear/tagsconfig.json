@@ -1,0 +1,34 @@
+[
+  {
+    "folder": "DevOps",
+    "tag": "#DevOps"
+  },
+  {
+    "folder": "Git",
+    "tag": "#Git"
+  },
+  {
+    "folder": "Learning",
+    "tag": "#learning"
+  },
+  {
+    "folder": "CI",
+    "tag": "#CI"
+  },
+  {
+    "folder": "Security",
+    "tag": "#security"
+  },
+  {
+    "folder": "Kubernetes",
+    "tag": "#Kubernetes"
+  },
+  {
+    "folder": "Mind",
+    "tag": "#Mind"
+  },
+  {
+    "folder": "RemoteWork",
+    "tag": "#RemoteWork"
+  }
+]
