@@ -1,14 +1,37 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 # This is a template I use for most of my bash scripts.
 
+# Only enable these shell behaviours if we're not being sourced
+if ! (return 0 2>/dev/null); then
+  # A better class of script...
+  set -o errexit  # Exit on most errors (see the manual)
+  set -o nounset  # Disallow expansion of unset variables
+  set -o pipefail # Use last non-zero exit code in a pipeline
+fi
+
 ### Setup variables
-DEBUG=${DEBUG:-false}
-CURRENT_TIMESTAMP=$(date '+%d-%m-%Y-%H%M%S')
+currentTimestamp=$(date '+%d-%m-%Y-%H%M%S')
+scriptDir="$(dirname "$scriptPath")"
+scriptName="$(basename "$scriptPath")"
+
+readonly DEBUG=${DEBUG:-false}
+readonly origCWD="$PWD"
+readonly scriptParams="$*"
+readonly scriptPath="${BASH_SOURCE[0]}"
+readonly scriptDir scriptName currentTimestamp
 
 if [ "$DEBUG" = "true" ]; then
   echo "Debug output enabled."
+  set -o xtrace # Trace the execution of the script
+
+  echo "Script name: $scriptName"
+  echo "Script path: $scriptPath"
+  echo "Script dir: $scriptDir"
+  echo "Script params: $scriptParams"
+  echo "Current timestamp: $currentTimestamp"
+  echo "Original CWD: $origCWD"
+
   set -x
 fi
 ###
@@ -83,7 +106,7 @@ function checkDependencies() {
 
 function echoExample() {
   echo "This is an example function."
-  echo "$CURRENT_TIMESTAMP"
+  echo "$currentTimestamp"
 }
 
 function runningInCI() {
@@ -96,6 +119,11 @@ function runningInCI() {
 }
 
 function main() {
+  # Invoke main with args if not sourced
+  if ! (return 0 2>/dev/null); then
+    main "$@"
+  fi
+
   checkDependencies
   echoExample
 }
