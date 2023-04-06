@@ -99,7 +99,7 @@ function checkDependencies() {
 
   for COMMAND in "${COMMANDS[@]}"; do
     if ! command -v "$($COMMAND)" &>/dev/null; then
-      exitWithError "$COMMAND not found. Install it and try again."
+      exitWithError "${COMMAND} not found. Install it and try again."
     fi
   done
 }
@@ -119,11 +119,6 @@ function runningInCI() {
 }
 
 function main() {
-  # Invoke main with args if not sourced
-  if ! (return 0 2>/dev/null); then
-    main "$@"
-  fi
-
   checkDependencies
   echoExample
 }
