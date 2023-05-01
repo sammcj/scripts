@@ -1,3 +1,6 @@
+# This Sieve script is designed to be used with Fastmail or any other Sieve server-side filtering
+# It will move any messages that are likely to be customer satisfaction surveys into a "Customer Satisfaction Spam" folder
+
 require ["fileinto", "body", "envelope", "mailbox", "variables", "index", "regex", "relational"];
 
 # Define any allowlist items (words, domains, email addresses) here
