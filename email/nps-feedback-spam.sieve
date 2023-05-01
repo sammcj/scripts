@@ -31,7 +31,7 @@ if not anyof(
             header :contains "X-Autorespond" "yes",
             header :contains "X-Mailer" ["*survey*", "*feedback*"],
             header :contains "List-Unsubscribe" ["mailto:", "unsubscribe", "opt-out", "click here", "manage preferences", "update preferences"],
-            header :matches "Subject" ["*customer survey*", "*provide feedback*", "*rate our*", "*how did we do*", "*your feedback is important*", "*Rate your experience*", "*We'd love your feedback*", "*We want your opinion*" "*tell us how we did*", "*how are we doing*"],
+            header :matches "Subject" ["*customer survey*", "*provide feedback*", "*rate our*", "*how did we do*", "*your feedback is important*", "*Rate your experience*", "*We'd love your feedback*", "*We want your opinion*", "*tell us how we did*", "*how are we doing*"],
             header :matches "From" ["*survey*", "*feedback*"]
         ),
         # Check for matching phrases in the body
