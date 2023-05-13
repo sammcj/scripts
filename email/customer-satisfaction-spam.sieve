@@ -13,7 +13,7 @@ set "allowlist" "";
 set "immediateMatch" "How likely are you to recommend us to a friend or colleague,How would you rate the support you received";
 
 # Define any phrases that should be considered likely to be customer satisfaction surveys
-set "bodyRegexes" "how would you rate,How did we do,your feedback is important,how was the support,rate our support,rate the support,give us your feedback,tell us how we did,how satisfied were you,on a scale of 1 to ,complete our survey,customer survey,If you do not wish to participate in future surveys,Rate your experience,We'd love your feedback,We want your opinion,tell us how we did";
+set "bodyRegexes" "how would you rate,How did we do,your feedback is important,how was the support,rate our support,rate the support,give us your feedback,tell us how we did,how satisfied were you,on a scale of 1 to ,complete our survey,customer survey,If you do not wish to participate in future surveys,Rate your experience,We'd love your feedback,We want your opinion,tell us how we did,rate the support you received";
 
 if not anyof(
     # Check if From address is in the allowlist
