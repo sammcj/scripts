@@ -1,63 +1,25 @@
 #!/usr/bin/env bash
+
 # remindme - A simple reminder script for zsh/bash
-
-# To use this script, add the following function to your .zshrc:
-#
-# # Add the path to the remindme.sh file
-# REMINDME_PATH="path/to/remindme.sh"
-#
-# # Configure directories to check for reminders
-# CHECK_REMINDER_DIRECTORIES=("~/git" "~/Documents")
-#
-# # Function to check if the current directory is in the list of directories to check
-# should_check_reminders() {
-#     local dir
-#     for dir in "${CHECK_REMINDER_DIRECTORIES[@]}"; do
-#         if [[ "$(realpath "$PWD")" == "$(realpath "$dir")" ]]; then
-#             return 0
-#         fi
-#     done
-#     return 1
-# }
-
-# # Function to check for reminders related to the current directory
-# check_reminders_on_chdir() {
-#     if should_check_reminders; then
-#         local reminders
-#         reminders=$(source "$REMINDME_PATH" -l | grep "$PWD" | sed 's/[^=]*= //')
-#         if [ -n "$reminders" ]; then
-#             echo "Reminders for this directory:"
-#             echo "$reminders"
-#             echo "Use 'remindme -d <reminder_id>' to mark a reminder as completed."
-#         fi
-#     fi
-# }
-
-# # Call the check_reminders_on_chdir function whenever you change directories
-# autoload -U add-zsh-hook
-# add-zsh-hook chpwd check_reminders_on_chdir
-
-# # Define the reminder_me function for convenience
-# remind_me() {
-#     source "$REMINDME_PATH" "$@"
-# }
+# See the end of the file for .zshrc examples
 
 # Ensure required tools are installed
 if ! command -v fzf &>/dev/null; then
-  echo "Fzf is not installed. Please install fzf for ReminderMe to work."
-  exit 0 # because exit 1 would kill the shell
+  echo "Fzf is not installed. Please install fzf for remindme to work."
+  exit 0
 fi
 
-# Define the ReminderMe configuration directory and file
+# Define the remindme configuration directory and file
 REMINDME_DIR="$HOME/.remindme"
 REMINDME_CONFIG="$REMINDME_DIR/config.toml"
+COMMAND_NAME="remind"
 
-# Ensure the ReminderMe configuration directory exists
+# Ensure the remindme configuration directory exists
 if [ ! -d "$REMINDME_DIR" ]; then
   mkdir -p "$REMINDME_DIR"
 fi
 
-# Ensure the ReminderMe configuration file exists
+# Ensure the remindme configuration file exists
 if [ ! -f "$REMINDME_CONFIG" ]; then
   touch "$REMINDME_CONFIG"
 fi
@@ -66,7 +28,7 @@ fi
 generate_reminder_id() {
   local date
   date="$(date +%Y-%m-%d)"
-  local words=("cat" "dog" "lizard" "chicken" "horse" "goat" "snake" "fish")
+  local words=("cat" "turkey" "dog" "lizard" "chicken" "horse" "goat" "snake" "fish" "burger" "potato")
   local first_word="${words[RANDOM % ${#words[@]}]}"
   local second_word="${words[RANDOM % ${#words[@]}]}"
   echo "${date}-${first_word}-${second_word}"
@@ -99,9 +61,9 @@ delete_reminder() {
 # Show usage
 usage() {
   echo "Usage:"
-  echo "  remindme <reminder_text>     Add a new reminder"
-  echo "  remindme -l                  List all reminders"
-  echo "  remindme -d [reminder_id]    Delete reminder"
+  echo "  ${COMMAND_NAME} <reminder_text>     Add a new reminder"
+  echo "  ${COMMAND_NAME} -l                  List all reminders"
+  echo "  ${COMMAND_NAME} -d [reminder_id]    Delete reminder"
 }
 
 # Main function
@@ -127,3 +89,49 @@ remindme() {
 
 # Call the main function with the given arguments
 remindme "$@"
+
+#######
+
+### remindme ###
+# REMINDME_PATH="${HOME}/git/scripts/remindme.sh"
+# COMMAND_NAME="remind"
+# #
+# # Configure directories to check for reminders
+# CHECK_REMINDER_DIRECTORIES=("${HOME}/git" "${HOME}/Documents")
+# #
+# # Function to check if the current directory is in the list of directories to check
+# should_check_reminders() {
+#   local dir
+#   for dir in "${CHECK_REMINDER_DIRECTORIES[@]}"; do
+#     if [[ "${PWD/#$HOME/~}" == "$dir" ]]; then
+#       return 0
+#     fi
+#   done
+#   return 1
+# }
+
+# # Function to check for reminders related to the current directory
+# check_reminders_on_chdir() {
+#   if should_check_reminders; then
+#     local reminders
+#     reminders=$(source "$REMINDME_PATH" -l | while IFS= read -r line; do
+#       if [[ "$line" == *"$PWD"* ]]; then
+#         echo "${line#*= }"
+#       fi
+#     done)
+#     if [ -n "$reminders" ]; then
+#       echo "Reminders for this directory:"
+#       echo "$reminders"
+#       echo "Use '''${COMMAND_NAME} -d <reminder_id>''' to mark a reminder as completed."
+#     fi
+#   fi
+# }
+
+# # Call the check_reminders_on_chdir function whenever you change directories
+# autoload -U add-zsh-hook
+# add-zsh-hook chpwd check_reminders_on_chdir
+
+# # Define the reminder_me function for convenience
+# remind() {
+#   source "$REMINDME_PATH" "$@"
+# }
