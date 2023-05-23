@@ -1,0 +1,36 @@
+Return-Path: <autogeneral.com.au>
+X-ME-Authentication-Results: mx3.messagingengine.com;
+    x-aligned-from=pass (Address match);
+    x-return-mx=pass header.domain=autogeneral.com.au policy.is_org=yes
+      (MX Records found: aspmx.l.google.com,alt1.aspmx.l.google.com,alt2.aspmx.l.google.com,aspmx3.googlemail.com,aspmx2.googlemail.com);
+    x-return-mx=pass smtp.domain=autogeneral.com.au policy.is_org=yes
+      (MX Records found: aspmx.l.google.com,alt1.aspmx.l.google.com,alt2.aspmx.l.google.com,aspmx3.googlemail.com,aspmx2.googlemail.com);
+    x-vs=clean score=0 state=0
+Authentication-Results: mx3.messagingengine.com;
+    x-csa=none;
+    x-me-sender=none;
+    x-ptr=pass smtp.helo=ken-ag-mta-x1.autogeneral.com.au
+      policy.ptr=ken-ag-mta-x1.autogeneral.com.au
+Authentication-Results: mx3.messagingengine.com;
+    bimi=skipped (DMARC Policy is not at enforcement)
+Authentication-Results: mx3.messagingengine.com;
+    arc=none (no signatures found)
+Authentication-Results: mx3.messagingengine.com;
+    dkim=none (no signatures found);
+    dmarc=pass policy.published-domain-policy=none
+      policy.applied-disposition=none policy.evaluated-disposition=none
+      (p=none,d=none,d.eval=none) policy.policy-from=p
+      header.from=autogeneral.com.au;
+    iprev=pass smtp.remote-ip=202.56.61.13
+      (ken-ag-mta-x1.autogeneral.com.au);
+    spf=pass smtp.mailfrom=auto-reply@autogeneral.com.au
+      smtp.helo=ken-ag-mta-x1.autogeneral.com.au
+MIME-Version: 1.0
+From: auto-reply@autogeneral.com.au
+To: YO@DAWG.COM
+Date: 22 May 2023 19:25:54 +1000
+Subject: tell us how we did - spam test
+Content-Type: text/plain; charset=utf-8
+
+YO DAWN THIS IS A SURVEY SPAM TEST
+your feedback is important
