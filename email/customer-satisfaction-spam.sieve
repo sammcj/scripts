@@ -6,10 +6,10 @@ set "allowlist_domains" "@alloweddomain.com";
 set "allowlist_words" "allowedword";
 
 # Define any phrases that should trigger immediate filing into the "Customer Satisfaction Spam" folder
-set "immediateMatch" "How likely are you to recommend us to a friend or colleague,How would you rate the support you received";
+set "immediateMatch" "How likely are you to recommend us to a friend or colleague,How would you rate the support you received,What do you think about your store experience,What do you think about your purchase products,Take a few minutes to share your feedback";
 
 # Define any phrases that should be considered likely to be customer satisfaction surveys
-set "bodyPatterns" "how would you rate,How did we do,your feedback is important,how was the support,rate our support,rate the support,give us your feedback,tell us how we did,how satisfied were you,on a scale of 1 to ,complete our survey,customer survey,If you do not wish to participate in future surveys,Rate your experience,We'd love your feedback,We want your opinion,tell us how we did";
+set "bodyPatterns" "how would you rate,How did we do,your feedback is important,how was the support,rate our support,rate the support,give us your feedback,tell us how we did,how satisfied were you,on a scale of 1 to ,complete our survey,customer survey,If you do not wish to participate in future surveys,Rate your experience,We'd love your feedback,We want your opinion,tell us how we did,share your feedback";
 
 if not anyof(
     # Check if From address is in the allowlist
@@ -31,12 +31,12 @@ if not anyof(
             header :contains "X-Autorespond" "yes",
             header :contains "X-Mailer" ["*survey*", "*feedback*"],
             header :contains "List-Unsubscribe" ["mailto:", "unsubscribe", "opt-out", "click here", "manage preferences", "update preferences"],
-            header :matches "Subject" ["*customer survey*", "*provide feedback*", "*rate our*", "*how did we do*", "*your feedback is important*", "*Rate your experience*", "*We'd love your feedback*", "*We want your opinion*", "*tell us how we did*", "*how are we doing*"],
+            header :matches "Subject" ["*customer survey*", "*customer feedback*", "*provide feedback*", "*rate our*", "*how did we do*", "*your feedback is important*", "*Rate your experience*", "*We'd love your feedback*", "*We want your opinion*", "*tell us how we did*", "*how are we doing*", "*How likely are you to recommend*", "*How likely would you be to recommend*", "*Help us to improve by rating*", "*What do you think of your purchase*", "*Please rate our support*"],
             header :matches "From" ["*survey*", "*feedback*"]
         ),
         # Check for matching phrases in the body
         anyof(
-            body :matches ["*how would you rate*",
+            body :matches ["*How would you rate*",
                            "*How did we do*",
                            "*your feedback is important*",
                            "*how was the support*",
@@ -52,7 +52,16 @@ if not anyof(
                            "*Rate your experience*",
                            "*We'd love your feedback*",
                            "*We want your opinion*",
-                           "*tell us how we did*"]
+                           "*tell us how we did*",
+                           "*share your feedback*",
+                           "*How likely are you to recommend*",
+                           "*How likely would you be to recommend*",
+                           "*How would you rate*",
+                           "*give us 5 stars*",
+                           "*Help us to improve by rating*",
+                           "*What do you think of your purchase*",
+                           "*Click below to rate*",
+                           "*Please rate our support*"]
         )
       )
     )
