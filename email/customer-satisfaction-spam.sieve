@@ -28,12 +28,13 @@ if not anyof(
 
     #header :contains :comparator "i;ascii-casemap" "Subject" ["*${immediateMatch}*"],
     header :contains :comparator "i;ascii-casemap" "Subject" [
-      "How likely are you to recommend us to a friend or colleague",
       "How would you rate the support you received",
       "What do you think about your store experience",
       "What do you think about your purchase products",
       "Take a few minutes to share your feedback",
-      "We value your feedback"
+      "We value your feedback",
+      "Your feedback is important",
+      "How likely are you to recommend"
       ],
     header :matches :comparator "i;ascii-casemap" "Subject" [
       "*We?d love to hear how your*",
