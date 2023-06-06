@@ -34,6 +34,7 @@ if not anyof(
       "Take a few minutes to share your feedback",
       "We value your feedback",
       "Your feedback is important",
+      "We would love your feedback",
       "How likely are you to recommend"
       ],
     header :matches :comparator "i;ascii-casemap" "Subject" [
@@ -134,6 +135,7 @@ if not anyof(
               "tell us how we did",
               "We want your opinion",
               "We'd love your feedback",
+              "We would love your feedback",
               "What do you think of your purchase",
               "Did your recent purchase go well?",
               "your feedback is important",
@@ -144,7 +146,8 @@ if not anyof(
               "*Are you happy with the * you * \?*",
               "*rate ??? support*",
               "*Help us*improve by rating*",
-              "*Did * solve your problem*"
+              "*Did * solve your problem*",
+              "*We would love your feedback*"
             ]
         )
       )
