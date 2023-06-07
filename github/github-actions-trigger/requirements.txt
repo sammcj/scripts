@@ -6,4 +6,4 @@ idna==3.4
 pycparser==2.21
 PyJWT==2.7.0
 requests==2.28.2
-urllib3==2.0.2
+urllib3==2.0.3
