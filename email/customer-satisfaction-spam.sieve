@@ -35,6 +35,8 @@ if not anyof(
       "We value your feedback",
       "Your feedback is important",
       "We would love your feedback",
+      "Rate your purchases",
+      "Rate your other purchases",
       "How likely are you to recommend"
       ],
     header :matches :comparator "i;ascii-casemap" "Subject" [
@@ -102,6 +104,8 @@ if not anyof(
               "What do you think of your purchase",
               "your feedback is important",
               "We value your feedback",
+              "Rate your other purchases",
+              "Rate your purchases",
               "bazaarvoice.com"
               ],
             header :matches :comparator "i;ascii-casemap" "Subject" [
@@ -140,6 +144,8 @@ if not anyof(
               "Did your recent purchase go well?",
               "your feedback is important",
               "We value your feedback",
+              "Rate your other purchases",
+              "Rate your purchases",
               "bazaarvoice.com"
             ],
             body :matches :comparator "i;ascii-casemap" [
