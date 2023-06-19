@@ -19,8 +19,8 @@ usage() {
 usage: GITHUB_TOKEN=1234abcd ${0##*/} -o OUTFILE
           [-i FILE] [-f FILTER] [-h]
 
-    -f  regex filter workflows by name (e.g. -f "build|test")
-    -h  display this help
+    -i  input file path
+    -o  output markdown file path
     -f  regex filter workflows by name (e.g. -f "build|test")
     -h  display this help
 
@@ -200,7 +200,7 @@ main() {
   echo -e "$output" >"$output_file"
 
   echo "Wrote to ${output_file}"
-  rm -rf "$tmpd" tmp/
+  rm -rf $tmpd tmp/
 }
 
 # Run
