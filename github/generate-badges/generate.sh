@@ -83,7 +83,7 @@ parse_repo() {
     # If the filter variable is set, skip any workflows that don't match the filter
     [ -n "${filter:-}" ] && ! filterworkflows "$workflow" "$filter" && continue
 
-    curl --header "Authorization: token ${GITHUB_TOKEN}" "https://raw.githubusercontent.com/$1/main/${workflow}" -o "$temp_workflow"
+    curl --header "Authorization: token ${GITHUB_TOKEN}" "https://raw.githubusercontent.com/$1/main/${workflow}" -o "$temp_workflow" --silent --fail
     name=$(yq '.name' "$temp_workflow")
 
     # set name to filename if not set
@@ -103,7 +103,9 @@ parse_repo() {
   # reset trap
   trap - ERR
 
-  [ $count -eq 0 ] && writeout "(none)"
+  # if no workflows were found skip writing the output
+  [ $count -eq 0 ] && return
+
   writeout "\n\n"
   echo " Generated markdown for $1"
   echo -e "$output" >tmp/output.md
@@ -192,7 +194,7 @@ main() {
       echo "Changes detected, updating $output_file"
     else
       echo "No changes detected, not updating $output_file"
-      rm -rf "$tmpd" tmp/
+      rm -rf $tmpd tmp/
       exit 0
     fi
   fi
