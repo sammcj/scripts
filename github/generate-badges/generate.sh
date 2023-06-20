@@ -4,15 +4,15 @@ set -euo pipefail
 # This script works, but it's not pretty.
 
 inputs=()
-filter=${filter:-}
-output=
-output_file=${output_file:-dashboard.md}
-temp_workflow=${temp_workflow:-tmp/workflow.yaml}
-debug=:${debug:-false}
+GITHUB_TOKEN=${GITHUB_TOKEN:-${github_token:-${GitHub_Token:-}}}
+filter=${filter:-${FILTER:-}}
+output_file=${output_file:-${OUTPUT_FILE:-dashboard.md}}
+temp_workflow=${temp_workflow:-${TEMP_WORKFLOW:-tmp/workflow.yaml}}
+debug=:${DEBUG:-${debug:-false}}
+output=""
 
 mkdir -p tmp/
 touch tmp/output.md
-touch "$output_file"
 
 usage() {
   cat <<EOF
@@ -30,11 +30,19 @@ EOF
 }
 
 debug() {
-  if [ "$debug" = true ]; then
+  if [ "$debug" = "true" ]; then
     echo "debug is enabled"
     set -x
   fi
 }
+
+# make sure we use GNU sed
+if command -v gsed &>/dev/null; then
+  SED=gsed
+else
+  # shellcheck disable=SC2209
+  SED=sed
+fi
 
 urlencode() {
   # urlencode <string> - URL-encodes string and writes it to stdout
@@ -62,15 +70,31 @@ filterworkflows() {
   [[ "$1" =~ $2 ]] && return 0 || return 1
 }
 
+cleanupmd() {
+  # cleanupmd - cleans up markdown output
+
+  # remove any duplicate lines (but not newlines)
+  $SED -i -e '$!N; /^\(.*\)\n\1$/!P; D' "$output_file"
+
+  # remove any occurrences of two or more newlines
+  $SED -i -e '/^$/N;/^\n$/D' "$output_file"
+
+  # remove any trailing whitespace
+  $SED -i -e 's/[[:space:]]*$//' "$output_file"
+}
+
 parse_repo() {
   # parse_repo <string> - parses a repo string and writes markdown to output
   repo="https://github.com/$1"
   repotmp="$tmpd/$1"
   reponame=${repo##*/}
 
-  writeout "## [${reponame}](${repo})\n\n"
   rm -rf "$repotmp"
   git clone --bare "$repo" "$repotmp" 2>/dev/null
+
+  # writeout "## [${reponame}](${repo})\n\n"
+
+  markdown_table+="| **[${reponame}](${repo})** | --- |\n"
 
   count=0
   while read -r workflow; do
@@ -93,10 +117,16 @@ parse_repo() {
     encoded_name="$(urlencode "$name")"
 
     # Output the markdown using the workflow name instead of the filename
-    writeout "- [![${name}](${repo}/workflows/${encoded_name}/badge.svg)]"
+    local badge="[![${name}](${repo}/workflows/${encoded_name}/badge.svg)]"
+    ###writeout "- $badge"
 
     # Add a link to the workflow
-    writeout "(${repo}/actions?query=workflow:\"$encoded_name\")\n"
+    local repolink="(${repo}/actions?query=workflow:\"$encoded_name\")" #\n
+    ###writeout "$repolink"
+
+    # Add a row to the table
+    export markdown_table+="| ${name} | ${badge}${repolink} |\n"
+
     count=$((count + 1))
   done < <(git -C "$repotmp" ls-tree -r HEAD | awk '{print $4}' | grep '^.github/workflows/')
 
@@ -118,7 +148,7 @@ parse_repo() {
 checkdeps() {
   # Check that all required commands and variables are available
   # Check that GITHUB_TOKEN is set
-  [ -z "${GITHUB_TOKEN:-}" ] && {
+  [ -z "${GITHUB_TOKEN:-}" ] || [ "$GITHUB_TOKEN" == "" ] && {
     echo "GITHUB_TOKEN is not set"
     exit 1
   }
@@ -128,6 +158,11 @@ checkdeps() {
     echo "Need yq"
     exit 1
   }
+}
+
+function create_markdown_table() {
+  # Initialize the table with headers
+  export markdown_table="| Name | Workflow |\n| --- | --- |\n"
 }
 
 # parse arguments
@@ -153,6 +188,7 @@ main() {
   # The main program
 
   checkdeps
+  create_markdown_table
 
   # if the output file doesn't end in .md, append it
   [[ "$output_file" != *.md ]] && output_file="$output_file".md
@@ -169,7 +205,7 @@ main() {
 
     title=${i##*/}
     title=${title%.*}
-    writeout "# ${title}\n\n"
+    # writeout "# ${title}\n\n"
     count=0
 
     # parse the list of repos
@@ -183,7 +219,7 @@ main() {
       echo "Failed to read $i"
       exit 1
     }
-    writeout "\n---\n"
+    # writeout "\n---\n"
   done
   # reset trap
   trap - ERR
@@ -194,15 +230,21 @@ main() {
       echo "Changes detected, updating $output_file"
     else
       echo "No changes detected, not updating $output_file"
-      rm -rf $tmpd tmp/
+      rm -rf "$tmpd" tmp/
       exit 0
     fi
   fi
 
-  echo -e "$output" >"$output_file"
+  # Add the table to the end of the file
+  echo -e "$markdown_table" >>"$output_file"
+
+  echo -e "$output" >>"$output_file"
+  cleanupmd
+
+  cat "$output_file"
 
   echo "Wrote to ${output_file}"
-  rm -rf $tmpd tmp/
+  rm -rf "$tmpd" tmp/
 }
 
 # Run
