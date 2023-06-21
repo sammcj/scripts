@@ -29,7 +29,7 @@ permissions:
 jobs:
   pr-labeller:
     name: "Pull Request Labeller"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     if: ${{ !github.event.pull_request.draft }}
     steps:
