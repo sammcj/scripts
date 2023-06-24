@@ -1,0 +1,28 @@
+[Unit]
+Description=NVIDIA Fan Control Daemon
+After=sysinit.target
+
+[Service]
+Type=simple
+Environment="PATH=/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin" "FAN_DEVICE=/sys/class/hwmon/hwmon4/pwm3"
+User=root
+ExecStart=/usr/local/sbin/nv_fan_control -daemon -fanpath ${FAN_DEVICE}
+Restart=always
+RestartSec=3
+TimeoutStopSec=5
+UMask=022
+CapabilityBoundingSet=~CAP_SYS_PTRACE # Limiting capabilities for security
+ProtectSystem=strict # Read-only for filesystem
+ProtectHome=read-only # Read-only for /home, /root, and /run/user
+PrivateTmp=true
+PrivateDevices=true
+NoNewPrivileges=true
+ReadWritePaths=${FAN_DEVICE} # Granting write access to this path alone
+SystemCallFilter=~@reboot @swap @obsolete @keyring @module @clock @cpu-emulation @debug @mount @raw-io
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+Nice=-10
+
+[Install]
+WantedBy=multi-user.target
