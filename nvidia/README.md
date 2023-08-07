@@ -18,6 +18,8 @@ chmod +x nv_fan_control
 mv nv_fan_control /usr/local/sbin/
 ```
 
+_Note: I have added a install.sh script, but haven't tested it on a clean machine yet._
+
 You may also want to create a systemd service to run this at boot and in the background.
 
 ```shell
