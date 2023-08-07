@@ -86,7 +86,7 @@ func init() {
 	originalMaxPWM := maxPWM
 	originalThreshold := threshold
 	originalLogFile := logFile
-	orginalMaxTemp := maxTemp
+	originalMaxTemp := maxTemp
 
 	if load && os.IsExist(checkConfig()) {
 		loadConfig()
@@ -116,8 +116,8 @@ func init() {
 	if logFile != originalLogFile {
 		logFile = originalLogFile
 	}
-	if maxTemp != orginalMaxTemp {
-		maxTemp = orginalMaxTemp
+	if maxTemp != originalMaxTemp {
+		maxTemp = originalMaxTemp
 	}
 
 	if save {
