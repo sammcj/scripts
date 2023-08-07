@@ -7,7 +7,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"log/syslog"
+	"math"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -25,9 +28,14 @@ var pollInterval int
 var listAllFans bool
 var basePWM int
 var maxPWM int
-var noSave bool
-var noLoad bool
+var save bool
+var load bool
+var lastTemperature int
 var temp bool
+var threshold int
+var logFile string
+var logger *log.Logger
+var maxTemp int
 
 const configPath = "~/.config/nv_fan_control"
 
@@ -38,46 +46,52 @@ type Config struct {
 	PollInterval   int    `json:"poll_interval"`
 	BasePWM        int    `json:"base_pwm"`
 	MaxPWM         int    `json:"max_pwm"`
+	MaxTemp        int    `json:"max_temp"`
+	Threshold      int    `json:"threshold"`
+	LogFile        string `json:"log_file"`
 }
 
 func init() {
-	// 1. Define all flags
+	// Initialize the logger
+	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+
 	flag.StringVar(&fanPath, "fanpath", "/sys/class/hwmon/hwmon4/pwm3", "Path to the PWM fan control")
 	flag.IntVar(&fanSensitivity, "sensitivity", 5, "Adjust this value. Higher means more aggressive fan response, and lower is more gradual.")
 	flag.BoolVar(&daemonMode, "daemon", false, "Run as a background daemon")
 	flag.IntVar(&pollInterval, "interval", 5, "Polling interval in seconds")
 	flag.BoolVar(&listAllFans, "list", false, "List all controllable fans")
-	flag.IntVar(&basePWM, "basePWM", 62, "Baseline PWM value for the fan")
+	flag.IntVar(&basePWM, "basePWM", 55, "Baseline PWM value for the fan")
 	flag.IntVar(&maxPWM, "maxPWM", 255, "Maximum PWM value for the fan")
-	flag.BoolVar(&noSave, "nosave", false, "Prevent saving to the config file on shutdown")
-	flag.BoolVar(&noLoad, "noload", false, "Prevent loading from the config file on start")
+	flag.BoolVar(&save, "save", false, "Save to the config file on shutdown (~/.config/nv_fan_control)")
+	flag.BoolVar(&load, "load", false, "Load config file (~/.config/nv_fan_control)")
 	flag.BoolVar(&temp, "temp", false, "Print the current GPU temperature and exit")
+	flag.IntVar(&threshold, "threshold", 50, "Temperature threshold for non-linear response (in degrees C))")
+	flag.IntVar(&maxTemp, "maxTemp", 82, "Maximum temperature to be reached before fan is at 100%")
+	flag.StringVar(&logFile, "log", "", "File to log to (leave blank to log to journalctl)")
 
-	// 2. Parse the flags
 	flag.Parse()
 
-	// If `-temp` is set, set noload, nosave print the GPU temperature and exit
 	if temp {
-		noLoad = true
-		noSave = true
+		load = true
+		save = false
 		fmt.Println(getGPUTemperature())
 		os.Exit(0)
 	}
 
-	// Store the original flag values
 	originalFanPath := fanPath
 	originalFanSensitivity := fanSensitivity
 	originalDaemonMode := daemonMode
 	originalPollInterval := pollInterval
 	originalBasePWM := basePWM
 	originalMaxPWM := maxPWM
+	originalThreshold := threshold
+	originalLogFile := logFile
+	orginalMaxTemp := maxTemp
 
-	// 3. If `-noload` is not set and config exists, load the config values
-	if !noLoad && !os.IsNotExist(checkConfig()) {
+	if load && os.IsExist(checkConfig()) {
 		loadConfig()
 	}
 
-	// 4. If any flag is set explicitly by the user, overwrite the corresponding loaded config value with the flag value
 	if fanPath != originalFanPath {
 		fanPath = originalFanPath
 	}
@@ -96,10 +110,33 @@ func init() {
 	if maxPWM != originalMaxPWM {
 		maxPWM = originalMaxPWM
 	}
+	if threshold != originalThreshold {
+		threshold = originalThreshold
+	}
+	if logFile != originalLogFile {
+		logFile = originalLogFile
+	}
+	if maxTemp != orginalMaxTemp {
+		maxTemp = orginalMaxTemp
+	}
 
-	// Save config if `-nosave` is not set
-	if !noSave {
+	if save {
 		defer saveConfig()
+	}
+
+	// Setup logging
+	if logFile != "" {
+		f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Fatal(err)
+		}
+		logger = log.New(f, "", log.LstdFlags)
+	} else {
+		syslogger, err := syslog.New(syslog.LOG_NOTICE, "nv_fan_control")
+		if err != nil {
+			log.Fatal(err)
+		}
+		logger = log.New(syslogger, "", 0)
 	}
 }
 
@@ -116,14 +153,14 @@ func checkConfig() error {
 func loadConfig() {
 	data, err := os.ReadFile(expandHome(configPath))
 	if err != nil {
-		log.Println("Failed to read config file:", err)
+		logger.Println("Failed to read config file:", err)
 		return
 	}
 
 	var cfg Config
 	err = json.Unmarshal(data, &cfg)
 	if err != nil {
-		log.Println("Failed to parse config file:", err)
+		logger.Println("Failed to parse config file:", err)
 		return
 	}
 
@@ -133,12 +170,15 @@ func loadConfig() {
 	pollInterval = cfg.PollInterval
 	basePWM = cfg.BasePWM
 	maxPWM = cfg.MaxPWM
+	threshold = cfg.Threshold
+	logFile = cfg.LogFile
+	maxTemp = cfg.MaxTemp
 
-	log.Println("Found and loaded config with values:", cfg)
+	logger.Println("Found and loaded config with values:", cfg)
 }
 
 func saveConfig() {
-	log.Println("Saving current settings to config file...")
+	logger.Println("Saving current settings to config file...")
 
 	cfg := Config{
 		FanPath:        fanPath,
@@ -147,173 +187,166 @@ func saveConfig() {
 		PollInterval:   pollInterval,
 		BasePWM:        basePWM,
 		MaxPWM:         maxPWM,
+		MaxTemp:        maxTemp,
+		Threshold:      threshold,
+		LogFile:        logFile,
 	}
 
 	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
-		log.Println("Failed to serialize config:", err)
+		logger.Println("Failed to serialize config:", err)
 		return
 	}
 
 	err = os.WriteFile(expandHome(configPath), data, 0644)
 	if err != nil {
-		log.Println("Failed to save config:", err)
+		logger.Println("Failed to save config:", err)
 	} else {
-		log.Println("Config saved successfully. The program will run with these settings next time.")
+		logger.Println("Config saved successfully. The program will run with these settings next time.")
 	}
 }
 
-func getGPUTemperature() (int, error) {
-	cmd := exec.Command("nvidia-smi", "-q", "-d", "temperature")
-	output, err := cmd.Output()
+func getGPUTemperature() int {
+	output, err := exec.Command("nvidia-smi", "--query-gpu=temperature.gpu", "--format=csv,noheader").Output()
 	if err != nil {
-		return 0, err
+		logger.Println("Failed to get GPU temperature:", err)
+		os.Exit(1)
 	}
 
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "GPU Current Temp") {
-			tempStr := strings.TrimSpace(strings.Split(line, ":")[1])
-			tempStr = strings.TrimRight(tempStr, " C") // Remove the " C" from the end
-			return strconv.Atoi(tempStr)
-		}
+	trimmedOutput := strings.TrimSuffix(string(output), "\n")
+	temperature, err := strconv.Atoi(trimmedOutput)
+	if err != nil {
+		logger.Println("Failed to parse GPU temperature:", err)
+		os.Exit(1)
 	}
-	return 0, fmt.Errorf("failed to find GPU temperature")
+
+	return temperature
 }
 
-func listControllableFans() ([]string, error) {
-	var pwmPaths []string
-	hwmons, err := os.ReadDir("/sys/class/hwmon")
+func setFanSpeed(percentage int) {
+	pwm := basePWM + (maxPWM-basePWM)*percentage/100
+	err := os.WriteFile(fanPath, []byte(strconv.Itoa(pwm)), 0644)
 	if err != nil {
-		return nil, err
+		logger.Println("Failed to set fan speed:", err)
 	}
-
-	for _, hwmon := range hwmons {
-		potentialPaths, _ := filepath.Glob("/sys/class/hwmon/" + hwmon.Name() + "/pwm*")
-		for _, path := range potentialPaths {
-			if _, err := os.OpenFile(path, os.O_WRONLY, 0644); err == nil {
-				pwmPaths = append(pwmPaths, path)
-			}
-		}
-	}
-
-	return pwmPaths, nil
 }
 
-func adjustFanSpeed() {
-	TEMP, err := getGPUTemperature()
-	if err != nil {
-		log.Println("Error reading GPU temperature:", err)
-		return
-	}
-
-	// Points for linear equation
-	x1 := 30
-	y1 := basePWM
-	x2 := 80
-	y2 := maxPWM - (fanSensitivity-1)*5
-	// For every increase in sensitivity by 1, the point y2y2 decreases by 5.
-
-	// Calculate PWM value using linear equation
-	PWM := (TEMP-x1)*(y2-y1)/(x2-x1) + y1
-
-	// Ensure PWM is within bounds
-	if PWM < basePWM {
-		PWM = basePWM
-	} else if PWM > maxPWM {
-		PWM = maxPWM
-	}
-
-	err = os.WriteFile(fanPath, []byte(strconv.Itoa(PWM)), 0644)
-	if err != nil {
-		log.Println("Failed to adjust fan speed:", err)
-		return
-	}
-
-	log.Printf("Adjusted fan speed to %d based on GPU temperature of %d°C.\n", PWM, TEMP)
-}
-
-func suggestUdevRules() {
-	hwmons, err := os.ReadDir("/sys/class/hwmon")
-	if err != nil {
-		log.Fatalf("Error reading hwmon directory: %v", err)
-	}
-
-	rules := []string{}
-	for _, hwmon := range hwmons {
-		// Construct the path to the device's attributes
-		path := filepath.Join("/sys/class/hwmon", hwmon.Name(), "device")
-
-		// Try to read idVendor and idProduct
-		idVendor, errVendor := os.ReadFile(filepath.Join(path, "idVendor"))
-		idProduct, errProduct := os.ReadFile(filepath.Join(path, "idProduct"))
-
-		if errVendor == nil && errProduct == nil {
-			rule := fmt.Sprintf(`SUBSYSTEM=="hwmon", ATTRS{idVendor}=="%s", ATTRS{idProduct}=="%s", SYMLINK+="fancontroller_%s"`, strings.TrimSpace(string(idVendor)), strings.TrimSpace(string(idProduct)), hwmon.Name())
-			rules = append(rules, rule)
-		}
-	}
-
-	if len(rules) > 0 {
-		fmt.Println("Suggested udev rules:")
-		for _, rule := range rules {
-			fmt.Println(rule)
-		}
-	} else {
-		fmt.Println("No suitable udev rules found. Your system might not provide idVendor and idProduct for fan controllers.")
-	}
+func sigmoid(x float64) float64 {
+	return 1.0 / (1.0 + math.Exp(-x))
 }
 
 func main() {
-	// Handle graceful shutdown
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+	if listAllFans {
+		// List all fans and exit
+		os.Exit(0)
+	}
 
-	log.Println("Starting fan control program...")
+	loadConfig()
 
-	TEMP, err := getGPUTemperature()
+	logFile := "/var/log/nv_fan_control.log"
+	logf, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		log.Println("Error reading GPU temperature:", err)
+		log.Fatal(err)
+	}
+	defer logf.Close()
+
+	// Reinitialize the logger
+	if logFile != "" {
+		logger = log.New(io.MultiWriter(os.Stdout, logf), "", log.LstdFlags)
 	} else {
-		log.Printf("Current GPU temperature: %d°C", TEMP)
-	}
-
-	// Set listFans based on listAllFans flag
-	listFans := &listAllFans
-
-	if *listFans {
-		fans, err := listControllableFans()
+		syslogger, err := syslog.New(syslog.LOG_NOTICE, "nv_fan_control")
 		if err != nil {
-			log.Fatalf("Error listing fans: %v", err)
+			log.Fatal(err)
 		}
-
-		fmt.Println("Controllable fans found:")
-		for _, fan := range fans {
-			fmt.Println(fan)
-		}
-
-		suggestUdevRules()
-		return
+		logger = log.New(io.MultiWriter(os.Stdout, syslogger), "", 0)
 	}
+
+	// Log out the current settings
+	logger.Println("Current settings:", Config{
+		FanPath:        fanPath,
+		FanSensitivity: fanSensitivity,
+		DaemonMode:     daemonMode,
+		PollInterval:   pollInterval,
+		BasePWM:        basePWM,
+		MaxPWM:         maxPWM,
+		MaxTemp:        maxTemp,
+		Threshold:      threshold,
+		LogFile:        logFile,
+	})
 
 	if daemonMode {
-		log.Println("Running in daemon mode...")
-		ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
-		go func() {
-			for {
-				select {
-				case <-shutdown:
-					ticker.Stop()
-					log.Println("Received shutdown signal, stopping daemon...")
-					return
-				case <-ticker.C:
-					adjustFanSpeed()
+		// Start in daemon mode
+		if _, err := os.Stat("/.dockerenv"); err == nil {
+			// We're inside a Docker container, don't daemonize
+			logger.Println("Running in Docker container, won't daemonize")
+		} else if _, err := os.Stat(filepath.Join("/proc", strconv.Itoa(os.Getppid()), "cmdline")); err == nil {
+			// We're not the top process, fork off a child
+			logger.Println("Not top process, forking")
+			args := os.Args[1:]
+
+			// Ensure only one -daemon flag
+			newArgs := []string{}
+			for _, arg := range args {
+				if arg != "-daemon" {
+					newArgs = append(newArgs, arg)
+					logger = log.New(io.MultiWriter(logf, os.Stdout), "", log.LstdFlags)
+
 				}
+
 			}
-		}()
-		<-shutdown
-		log.Println("Shutting down...")
-	} else {
-		adjustFanSpeed()
+			newArgs = append(newArgs, "-daemon")
+
+			cmd := exec.Command(os.Args[0], newArgs...)
+			cmd.Start()
+			logger.Println("Forked child, exiting")
+			logger.Println("Child PID:", cmd.Process.Pid)
+			os.Exit(0)
+		}
+	}
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		for range signalChan {
+			logger.Println("Caught an interrupt, stopping fan control")
+			setFanSpeed(0) // Let the system control the fan
+			os.Exit(0)
+		}
+	}()
+
+	for {
+		temperature := getGPUTemperature()
+
+		var pwm int
+
+		// if there's no change, don't do anything
+		if temperature == lastTemperature {
+			time.Sleep(time.Duration(pollInterval) * time.Second)
+			continue
+		}
+
+		if temperature <= threshold {
+			// Below the threshold, we use a non-linear sigmoid function
+			adjustedTemp := float64(temperature - threshold)
+			pwm = basePWM + int(sigmoid(float64(fanSensitivity)*adjustedTemp)*float64(maxPWM-basePWM))
+			logger.Printf("GPU Temp: %d is below or at threshold. Threshold distance: %.2f, calculated fan speed (pwm): %d\n", temperature, adjustedTemp, pwm)
+		} else {
+			// Above the threshold, we scale pwm linearly from basePWM at threshold to maxPWM at maxTemp
+			pwm = basePWM + (maxPWM-basePWM)*(temperature-threshold)/(maxTemp-threshold)
+			logger.Printf("GPU Temp: %d is above threshold. Calculated fan speed (pwm): %d\n", temperature, pwm)
+		}
+
+		// Ensure pwm is within bounds
+		if pwm < basePWM {
+			pwm = basePWM
+		} else if pwm > maxPWM {
+			pwm = maxPWM
+		}
+
+		setFanSpeed(pwm)
+
+		lastTemperature = temperature
+
+		time.Sleep(time.Duration(pollInterval) * time.Second)
 	}
 }

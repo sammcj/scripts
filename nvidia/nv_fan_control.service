@@ -6,24 +6,24 @@ After=sysinit.target
 Type=simple
 Environment="FAN_DEVICE=/sys/class/hwmon/hwmon4/pwm3"
 User=root
-ExecStart=/usr/local/sbin/nv_fan_control -daemon -fanpath ${FAN_DEVICE}
+ExecStart=/usr/local/sbin/nv_fan_control -sensitivity 5 -threshold 60 -maxPWM 255 -basePWM 34 -interval 3 -fanpath ${FAN_DEVICE}
 Restart=always
 RestartSec=3
 TimeoutStopSec=5
-UMask=022
+#UMask=022
 # Limiting capabilities for security
 CapabilityBoundingSet=~CAP_SYS_PTRACE
 # Read-only for filesystem
-ProtectSystem=strict
+#ProtectSystem=strict
 # Read-only for /home, /root, and /run/user
 ProtectHome=read-only
 PrivateTmp=true
-PrivateDevices=true
+#PrivateDevices=true
 NoNewPrivileges=true
 # Granting write access to this path alone
-ReadWritePaths=/sys/class/hwmon/hwmon4/
+ReadWritePaths=/sys/class/hwmon/hwmon4/pwm3
 SystemCallFilter=~@reboot @swap @obsolete @keyring @module @clock @cpu-emulation @debug @mount @raw-io
-ProtectKernelTunables=true
+#ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true
 Nice=-10
