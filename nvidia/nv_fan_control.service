@@ -6,7 +6,7 @@ After=sysinit.target
 Type=simple
 Environment="FAN_DEVICE=/sys/class/hwmon/hwmon4/pwm3"
 User=root
-ExecStart=/usr/local/sbin/nv_fan_control -sensitivity 5 -threshold 57 -maxPWM 240 -basePWM 44 -interval 3 -fanpath ${FAN_DEVICE}
+ExecStart=/usr/local/sbin/nv_fan_control -sensitivity 3 -maxPWM 245 -basePWM 45 -interval 3 -fanpath ${FAN_DEVICE}
 Restart=always
 RestartSec=3
 TimeoutStopSec=5

@@ -25,7 +25,7 @@ import (
 // Global Variables
 var currentIndex int
 var fanPath string
-var fanSensitivity int
+var fanSensitivity float64
 var daemonMode bool
 var pollInterval int
 var listAllFans bool
@@ -45,6 +45,8 @@ var debug bool
 var offBelow int
 var offSamples int
 var idxOffSample int
+var pwmMultiplier float64 = 1.0
+var simpleFanSpeed bool = true
 
 // Set temperatureChanges to [maxSamples]int
 var temperatureChanges = make([]int, maxSamples)
@@ -55,19 +57,20 @@ const (
 )
 
 type Config struct {
-	FanPath        string `json:"fan_path"`
-	FanSensitivity int    `json:"fan_sensitivity"`
-	DaemonMode     bool   `json:"daemon_mode"`
-	PollInterval   int    `json:"poll_interval"`
-	BasePWM        int    `json:"base_pwm"`
-	MaxPWM         int    `json:"max_pwm"`
-	MaxSamples     int    `json:"max_samples"`
-	MaxTemp        int    `json:"max_temp"`
-	OffBelow       int    `json:"off_below"`
-	Threshold      int    `json:"threshold"`
-	LogFile        string `json:"log_file"`
-	Debug          bool   `json:"debug"`
-	OffSamples     int    `json:"off_samples"`
+	FanPath        string  `json:"fan_path"`
+	FanSensitivity float64 `json:"fan_sensitivity"`
+	DaemonMode     bool    `json:"daemon_mode"`
+	PollInterval   int     `json:"poll_interval"`
+	BasePWM        int     `json:"base_pwm"`
+	MaxPWM         int     `json:"max_pwm"`
+	MaxSamples     int     `json:"max_samples"`
+	MaxTemp        int     `json:"max_temp"`
+	OffBelow       int     `json:"off_below"`
+	Threshold      int     `json:"threshold"`
+	LogFile        string  `json:"log_file"`
+	Debug          bool    `json:"debug"`
+	OffSamples     int     `json:"off_samples"`
+	SimpleFanSpeed bool    `json:"simple_fan_speed"`
 }
 
 func init() {
@@ -75,9 +78,9 @@ func init() {
 	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	flag.StringVar(&fanPath, "fanpath", "/sys/class/hwmon/hwmon4/pwm3", "Path to the PWM fan control")
-	flag.IntVar(&fanSensitivity, "sensitivity", 5, "Adjust this value. Higher means more aggressive fan response, and lower is more gradual.")
+	flag.Float64Var(&fanSensitivity, "sensitivity", 1.5, "Higher means slower initial response to temp changes.")
 	flag.BoolVar(&daemonMode, "daemon", false, "Run as a background daemon")
-	flag.IntVar(&pollInterval, "interval", 5, "Polling interval in seconds")
+	flag.IntVar(&pollInterval, "interval", 3, "Polling interval in seconds")
 	flag.BoolVar(&listAllFans, "list", false, "List all controllable fans")
 	flag.IntVar(&basePWM, "basePWM", 42, "Baseline PWM value for the fan, it is off below this")
 	flag.IntVar(&maxPWM, "maxPWM", 250, "Maximum PWM value for the fan")
@@ -91,6 +94,7 @@ func init() {
 	flag.StringVar(&logFile, "log", "", "File to log to (leave blank to log to journalctl)")
 	flag.IntVar(&maxSamples, "MaxSamples", 40, "Number of samples to log for the moving average information")
 	flag.BoolVar(&debug, "debug", false, "Enable debug logging")
+	flag.BoolVar(&simpleFanSpeed, "simpleFanSpeed", true, "Use a simple fan speed algorithm")
 
 	flag.Parse()
 
@@ -113,6 +117,7 @@ func init() {
 	originalMaxSamples := maxSamples
 	originalOffBelow := offBelow
 	originalOffSamples := offSamples
+	originalSimpleFanSpeed := simpleFanSpeed
 
 	if load && os.IsExist(checkConfig()) {
 		loadConfig()
@@ -153,6 +158,9 @@ func init() {
 	}
 	if offSamples != originalOffSamples {
 		offSamples = originalOffSamples
+	}
+	if simpleFanSpeed != originalSimpleFanSpeed {
+		simpleFanSpeed = originalSimpleFanSpeed
 	}
 
 	if save {
@@ -209,6 +217,8 @@ func loadConfig() {
 	logFile = cfg.LogFile
 	maxTemp = cfg.MaxTemp
 	offSamples = cfg.OffSamples
+	offBelow = cfg.OffBelow
+	simpleFanSpeed = cfg.SimpleFanSpeed
 
 	logger.Println("Found and loaded config with values:", cfg)
 }
@@ -226,6 +236,9 @@ func saveConfig() {
 		MaxTemp:        maxTemp,
 		Threshold:      threshold,
 		LogFile:        logFile,
+		OffSamples:     offSamples,
+		OffBelow:       offBelow,
+		SimpleFanSpeed: simpleFanSpeed,
 	}
 
 	data, err := json.MarshalIndent(cfg, "", "  ")
@@ -260,13 +273,44 @@ func getGPUTemperature() int {
 	return temperature
 }
 
+func simpleFan(temperature int, basePWM int, maxPWM int, fanSensitivity float64) int {
+	// A super simple fan speed algorithm that linearly scales the PWM value from basePWM to maxPWM based on the temperature
+	// Ensure the temperature is within the range of 0-100
+	if temperature < 0 {
+		temperature = 0
+	} else if temperature > 100 {
+		temperature = 100
+	}
+
+	// Ensure the basePWM and maxPWM are within the range of 0-255
+	if basePWM < 0 {
+		basePWM = 0
+	} else if basePWM > 255 {
+		basePWM = 255
+	}
+
+	if maxPWM < 0 {
+		maxPWM = 0
+	} else if maxPWM > 255 {
+		maxPWM = 255
+	}
+
+	// Apply the sensitivity curve to the temperature
+	scaledTemp := math.Pow(float64(temperature)/100, fanSensitivity) * 100
+
+	// Linearly scale the PWM value from basePWM to maxPWM based on the scaled temperature
+	scaledPWM := basePWM + int((float64(maxPWM-basePWM)*scaledTemp)/100)
+
+	return scaledPWM
+}
+
 func setFanSpeed(pwm int) {
 	// If the current fan speed is < basePWM give the fan an extra kick on top of basePWM to get it going
 	if pwm > basePWM && previousPWM < basePWM {
 		pwm = basePWM + 25
 		time.Sleep(750 * time.Millisecond)
 	}
-	// write the pwm int to the file
+	// write the pwm the file
 	err := os.WriteFile(fanPath, []byte(strconv.Itoa(pwm)), 0644)
 	if err != nil {
 		logger.Println("Failed to set fan speed:", err)
@@ -332,11 +376,20 @@ func dataLog(previousTemperature int, previousPWM int, temperature int, pwm int)
 		tempChange := temperature - previousTemperature
 		pwmChange := pwm - previousPWM
 
-		// Log the relation between the PWM and temperature changes
-		logger.Printf("For PWM change of %d, the temperature change was: %d\n", pwmChange, tempChange)
+		if tempChange > 0 || pwmChange > 0 {
+			// Log the relation between the PWM and temperature changes
+			logger.Printf("For PWM change of %d, the temperature change was: %d\n", pwmChange, tempChange)
+		}
 
-		if math.Abs(float64(pwmChange)) > 10 && math.Abs(float64(tempChange)) < 1 {
-			logger.Println("Alert: Significant (>=10) PWM change did not affect temperature.")
+		// only run this if it's not the first few runs
+		if currentIndex > 1 {
+			// Check if the temperature change was significant but the PWM change was not
+			if math.Abs(float64(pwmChange)) > 10 && math.Abs(float64(tempChange)) < 1 {
+				logger.Println("Alert: Significant (>=10) PWM change did not affect temperature.")
+			}
+			currentIndex++
+		} else {
+			currentIndex++
 		}
 
 		// Storing temperature change
@@ -510,48 +563,55 @@ func main() {
 			continue
 		}
 
-		if temperature <= threshold {
-			adjustedTemp := float64(temperature - threshold)
+		if debug {
+			println("Condition met: temperature <= threshold %d <= %d", temperature, threshold)
+		}
 
-			// If the temperature is below offBelow and the utilisation is below 5%, turn the fan off
-			if temperature < offBelow && (GPUUtilisation() < 5) {
-				// If the temperature has been below offBelow for more than 10 samples, turn the fan off
-				if idxOffSample < offSamples {
-					idxOffSample++
-					logger.Printf("GPU Temp: %d. Below %d and utilisation is below 5%%, [Not turning off, until cycle %d >= %d]\n", temperature, offBelow, idxOffSample, offSamples)
-				} else {
-					pwm = 0
-					logger.Printf("GPU Temp: %d. Below %d and utilisation is below 5%%, [Turning off]\n", temperature, offBelow)
-				}
+		// If the temperature is below offBelow and the utilisation is below 5%, turn the fan off
+		if temperature < offBelow && (GPUUtilisation() < 5) {
+			if debug {
+				println("Condition met: temperature < offBelow && (GPUUtilisation() < 5) %d < %d && (%d < 5)", temperature, offBelow, GPUUtilisation())
+			}
+			// If the temperature has been below offBelow for more than 10 samples, turn the fan off
+			if idxOffSample < offSamples {
+				idxOffSample++
+				logger.Printf("GPU Temp: %d. Below %d and utilisation is below 5%%, [Not turning off, until cycle %d >= %d]\n", temperature, offBelow, idxOffSample, offSamples)
 			} else {
-				// Ensure pwm is within bounds
-				if pwm < basePWM {
-					pwm = basePWM
-				} else if pwm > maxPWM {
-					pwm = maxPWM
+				pwm = 0
+				logger.Printf("GPU Temp: %d. Below %d and utilisation is below 5%%, [Turning off]\n", temperature, offBelow)
+			}
+		} else { // If the temperature is above offBelow or the utilisation is above 5%, turn the fan on
+			if debug {
+				println("Condition met: temperature (>= offBelow || GPUUtilisation() >= 5 &&) && < threshold %d (>= %d || %d >= 5) && < %d", temperature, offBelow, GPUUtilisation(), threshold)
+			}
+
+			// If run with simpleFanSpeed true, use the simple fan speed algorithm
+			if simpleFanSpeed {
+				pwm = simpleFan(getGPUTemperature(), basePWM, maxPWM, fanSensitivity)
+			} else {
+
+				// Calculate the PWM (pwm) based on the temp between offbelow (temp) and threshold (temp)
+				if temperature <= threshold {
+					maxPWMFloat := float64(maxPWM)
+					basePWMFloat := float64(basePWM)
+					pwm = basePWM + int((maxPWMFloat-basePWMFloat)*(float64(temperature-offBelow)/float64(threshold-offBelow)))
+				} else {
+					if debug {
+						println("Condition met: temperature > threshold", temperature, ">", threshold)
+					}
+					multiplier := pwmMultiplier
+					pwm = basePWM + int(float64(maxPWM-basePWM)*(float64(temperature-threshold)/float64(100-threshold))*multiplier)
 				}
 			}
 
-			// Calculate the PWM, first from the minimum fan speed to the threshold speed, then from the threshold speed to the maximum speed
-			// e.g. if threshold speed = 150, basePWM = 30, temperature = 50, threshold = 60, max speed = 250 the resulting pwm speed is 70, but if we're over the threshold, e.g. 70, we scale from the threshold speed (100) to the max speed (250) resulting in 175.
-			// the value is then multiplied by the fanSensitivity-5, so that if fanSensitivity = 5 the curve is linear, if it's 8 the curve is more pronounced etc...
-			// first convert things to float64 to avoid integer division
-			pwm = int((float64(basePWM) + (float64(threshold-basePWM)/(1+math.Exp(-adjustedTemp/float64(fanSensitivity-5))))*(1+(float64(maxPWM-threshold)/(1+math.Exp(-adjustedTemp/float64(fanSensitivity-5)))))))
-
-			logger.Printf("GPU Temp: %d. Threshold distance: %.2f, Utilisation: %d%%, [Calculated PWM: %d]\n", temperature, adjustedTemp, GPUUtilisation(), pwm)
-		} else {
-			// Above the threshold, we scale pwm linearly from basePWM at threshold to maxPWM at maxTemp
-			pwm = (basePWM + (maxPWM-basePWM)*(temperature-threshold)/(maxTemp-threshold))
-			logger.Printf("GPU Temp: %d. [Calculated fan PWM: %d]\n", temperature, pwm)
+			logger.Printf("GPU Temp: %d. Utilisation: %d%%, [Calculated PWM: %d]\n", temperature, GPUUtilisation(), pwm)
 		}
-
 		// Store the previous values
 		previousTemperature = temperature
 
 		// Update the fan PWM
 		setFanSpeed(pwm)
 
-		// Log the data #TODO: fix this
 		dataLog(previousTemperature, previousPWM, temperature, pwm)
 
 		time.Sleep(time.Duration(pollInterval) * time.Second)
