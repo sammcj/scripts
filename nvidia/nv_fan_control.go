@@ -273,6 +273,29 @@ func getGPUTemperature() int {
 	return temperature
 }
 
+func checkPwmMode() {
+	// check that $fanPath_enable is set to 1, if not set it to 1
+	// this is to ensure that the fan is controlled by pwm and not by the gpu temperature
+
+	// read the file
+	data, err := os.ReadFile(fanPath + "_enable")
+	if err != nil {
+		logger.Println("Failed to read fan enable file:", err)
+		os.Exit(1)
+	}
+
+	// check if the file is set to 1
+	if string(data) != "1" {
+		// set the file to 1
+		err = os.WriteFile(fanPath+"_enable", []byte("1"), 0644)
+		println("Setting fan enable file to 1 to enable software pwm control")
+		if err != nil {
+			logger.Println("Failed to set fan enable file:", err)
+			os.Exit(1)
+		}
+	}
+}
+
 func simpleFan(temperature int, basePWM int, maxPWM int, fanSensitivity float64) int {
 	// A super simple fan speed algorithm that linearly scales the PWM value from basePWM to maxPWM based on the temperature
 	// Ensure the temperature is within the range of 0-100
