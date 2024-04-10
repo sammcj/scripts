@@ -4,13 +4,15 @@ set -ex
 
 OLLAMA_GIT_DIR="$HOME/git/ollama"
 PATCH_OLLAMA=${PATCH_OLLAMA:-"true"}
+# normalise PATCH_OLLAMA to a boolean
+PATCH_OLLAMA=$(echo "$PATCH_OLLAMA" | tr '[:upper:]' '[:lower:]')
 
 export OLLAMA_DEBUG=0
 export GIN_MODE=release
 export BLAS_INCLUDE_DIRS=/opt/homebrew/Cellar/clblast/1.6.2/,/opt/homebrew/Cellar/openblas/0.3.27/include,/opt/homebrew/Cellar/gsl/2.7.1/include/gsl,/opt/homebrew/Cellar/clblast/1.6.2/include
 
 function patch_ollama() {
-  if [ "$PATCH_OLLAMA" != "true" ]; then
+  if [ "$PATCH_OLLAMA" != true ]; then
     echo "skipping patching of ollama build config"
     return
   fi
@@ -65,7 +67,7 @@ function update_fw_rules() {
     return
   fi
 
-  # Tell littlesnitch to accept the modified app
+  # Tell the fw to accept the modified app
   /usr/libexec/ApplicationFirewall/socketfilterfw --add /Applications/Ollama.app
   /usr/libexec/ApplicationFirewall/socketfilterfw --add /Applications/Ollama.app/Contents/MacOS/Ollama
   # And accept if the app exists already but has been modified
