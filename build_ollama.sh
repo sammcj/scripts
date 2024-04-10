@@ -3,13 +3,19 @@
 set -ex
 
 OLLAMA_GIT_DIR="$HOME/git/ollama"
+PATCH_OLLAMA=${PATCH_OLLAMA:-"true"}
 
 export OLLAMA_DEBUG=0
 export GIN_MODE=release
 export BLAS_INCLUDE_DIRS=/opt/homebrew/Cellar/clblast/1.6.2/,/opt/homebrew/Cellar/openblas/0.3.27/include,/opt/homebrew/Cellar/gsl/2.7.1/include/gsl,/opt/homebrew/Cellar/clblast/1.6.2/include
 
 function patch_ollama() {
-  echo "patching ollama"
+  if [ "$PATCH_OLLAMA" != "true" ]; then
+    echo "skipping patching of ollama build config"
+    return
+  fi
+
+  echo "patching ollama with Sams tweaks"
 
   if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
     cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak
