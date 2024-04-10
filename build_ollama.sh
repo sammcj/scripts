@@ -20,6 +20,7 @@ function patch_ollama() {
   fi
 
   echo "patching ollama with Sams tweaks"
+  echo "This is a gross hack as Ollama's build scripts don't seem to honour CMAKE variables properly"
 
   if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
     cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak
