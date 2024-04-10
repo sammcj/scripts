@@ -20,7 +20,6 @@ function patch_ollama() {
   fi
 
   echo "patching ollama with Sams tweaks"
-  echo "This is a gross hack as Ollama's build scripts don't seem to honour CMAKE variables properly"
 
   if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
     cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak
@@ -30,6 +29,7 @@ function patch_ollama() {
     cp "$OLLAMA_GIT_DIR"/scripts/build_darwin.sh "$OLLAMA_GIT_DIR"/scripts/build_darwin.sh.bak
   fi
 
+  echo "This is a gross hack as Ollama's build scripts don't seem to honour CMAKE variables properly"
   sed -i '' "s/-DLLAMA_ACCELERATE=on/-DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.1 -DLLAMA_NATIVE=on -DLLAMA_CLBLAST=on -DLLAMA_F16C=on -DLLAMA_CURL=on -DCLBlast_DIR=\/opt\/homebrew\/Cellar\/clblast\/1.6.2\/ -Wno-dev/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
   #   -DLLAMA_QKK_64=on -DLLAMA_BLAS_VENDOR=Apple -DLLAMA_VULKAN=on
 
