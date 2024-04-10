@@ -59,7 +59,7 @@ function build_app() {
   mv out/Ollama-darwin-arm64/Ollama.app /Applications/Ollama.app
 }
 
-function updated_fw_rules() {
+function update_fw_rules() {
   if [ ! -f "/usr/libexec/ApplicationFirewall/socketfilterfw" ]; then
     echo "socketfilterfw not found, skipping"
     return
@@ -104,5 +104,5 @@ update_git
 patch_ollama
 build_cli
 build_app
-updated_fw_rules
+update_fw_rules
 run_app
