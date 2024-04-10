@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# This script will build Ollama and it's macOS App from the Ollama git repo along with the latest llama.cpp.
+
 set -ex
 
 OLLAMA_GIT_DIR="$HOME/git/ollama"
