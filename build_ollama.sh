@@ -51,6 +51,13 @@ function build_app() {
 
   rm -rf /Applications/Ollama.app
   mv out/Ollama-darwin-arm64/Ollama.app /Applications/Ollama.app
+}
+
+function updated_fw_rules() {
+  if [ ! -f "/usr/libexec/ApplicationFirewall/socketfilterfw" ]; then
+    echo "socketfilterfw not found, skipping"
+    return
+  fi
 
   # Tell littlesnitch to accept the modified app
   /usr/libexec/ApplicationFirewall/socketfilterfw --add /Applications/Ollama.app
@@ -59,10 +66,18 @@ function build_app() {
   /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /Applications/Ollama.app
   /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /Applications/Ollama.app/Contents/MacOS/Ollama
   sleep 1
-
 }
 
 function update_git() {
+
+  if [ ! -d "$OLLAMA_GIT_DIR" ]; then
+    echo "cloning ollama git repo"
+    # one directory up from the git repo
+    BASE_DIR=$(dirname "$OLLAMA_GIT_DIR")
+    cd "$BASE_DIR" || exit
+    git clone https://github.com/ollama/ollama.git --depth=1
+  fi
+
   echo "updating ollama git repo"
   cd "$OLLAMA_GIT_DIR" || exit
   rm -rf llm/llama.cpp dist ollama llm/build macapp/out
@@ -83,4 +98,5 @@ update_git
 patch_ollama
 build_cli
 build_app
+updated_fw_rules
 run_app
