@@ -62,6 +62,7 @@ function build_app() {
 
   rm -rf /Applications/Ollama.app
   mv out/Ollama-darwin-arm64/Ollama.app /Applications/Ollama.app
+  codesign --force --deep --sign - /Applications/Ollama.app
 }
 
 function update_fw_rules() {
