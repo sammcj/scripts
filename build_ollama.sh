@@ -16,10 +16,7 @@ export BLAS_INCLUDE_DIRS=/opt/homebrew/Cellar/clblast/1.6.2/,/opt/homebrew/Cella
 
 # a function that takes input (error output from another command), and stores it in a variable for printing later
 function store_error() {
-  # store the error in an array, silently
-  # set +x
-  errors+=("$1")
-  # set -x
+  errors+=("""  - Stored error from line $LINENO: $1""")
 }
 
 trap 'store_error "Error on line $LINENO"' ERR
@@ -48,7 +45,7 @@ function patch_llama() {
     if [ $? -eq 0 ]; then
       git apply <<<"$PATCH"
     else
-      echo "Patch failed to apply cleanly, skipping..." | store_error
+      store_error "Patch failed to apply cleanly, skipping..."
     fi
   done
 }
@@ -191,9 +188,14 @@ trap - ERR
 
 # print any errors that were stored
 if [ ${#errors[@]} -gt 0 ]; then
-  echo "Errors:"
+  # set text to red
+  tput setaf 1
+  echo "---"
+  echo "Stored Errors:"
   for error in "${errors[@]}"; do
     echo "$error"
   done
+  echo "---"
+  tput sgr0
   exit 1
 fi
