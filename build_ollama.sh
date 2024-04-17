@@ -45,7 +45,7 @@ function patch_llama() {
     if [ $? -eq 0 ]; then
       git apply <<<"$PATCH"
     else
-      store_error "Patch failed to apply cleanly, skipping..."
+      store_error "Patch from $PR failed to apply cleanly, skipping..."
     fi
   done
 }
