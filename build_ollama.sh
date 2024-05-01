@@ -106,6 +106,8 @@ function build_app() {
   echo "building ollama app"
   cd "$OLLAMA_GIT_DIR"/macapp || exit
 
+  set -e
+
   npm i
   npx electron-forge make --arch arm64
 
@@ -117,6 +119,8 @@ function build_app() {
   rm -rf /Applications/Ollama.app
   mv out/Ollama-darwin-arm64/Ollama.app /Applications/Ollama.app
   codesign --force --deep --sign - /Applications/Ollama.app
+
+  set +e
 }
 
 function update_fw_rules() {
@@ -149,14 +153,21 @@ function update_git() {
   rm -rf llm/llama.cpp dist ollama llm/build macapp/out
   git reset --hard HEAD
 
+  set -e
+
   # force pull any tags
   git fetch --tags --force
   git pull
   git submodule init
+  git rebase --abort
   git submodule update --remote --rebase --recursive
 
   # shellcheck disable=SC2016
-  gsed -i 's/git submodule update --force ${LLAMACPP_DIR}/git submodule update --force --recursive --rebase --remote ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
+  # gsed -i 's/git submodule update --force ${LLAMACPP_DIR}/git submodule update --force --recursive --rebase --remote ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
+  # instead completely remove the submodule update line
+  gsed -i '/git submodule update --force ${LLAMACPP_DIR}/d' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
+
+  set +e
 }
 
 function set_version() {
