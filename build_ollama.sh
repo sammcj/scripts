@@ -153,7 +153,10 @@ function update_git() {
   git fetch --tags --force
   git pull
   git submodule init
-  git submodule update --recursive
+  git submodule update --remote --rebase --recursive
+
+  # shellcheck disable=SC2016
+  gsed -i 's/git submodule update --force ${LLAMACPP_DIR}/git submodule update --force --recursive --rebase --remote ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
 }
 
 function set_version() {
