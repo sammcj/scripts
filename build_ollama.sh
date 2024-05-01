@@ -13,6 +13,8 @@ PATCH_OLLAMA=$(echo "$PATCH_OLLAMA" | tr '[:upper:]' '[:lower:]')
 export OLLAMA_DEBUG=0
 export GIN_MODE=release
 export BLAS_INCLUDE_DIRS=/opt/homebrew/Cellar/clblast/1.6.2/,/opt/homebrew/Cellar/openblas/0.3.27/include,/opt/homebrew/Cellar/gsl/2.7.1/include/gsl,/opt/homebrew/Cellar/clblast/1.6.2/include
+export OLLAMA_NUM_PARALLEL=4
+export OLLAMA_MAX_LOADED_MODELS=3
 
 # a function that takes input (error output from another command), and stores it in a variable for printing later
 function store_error() {
@@ -186,6 +188,8 @@ function set_version() {
 function run_app() {
   cd "$OLLAMA_GIT_DIR" || exit
   launchctl setenv OLLAMA_ORIGINS 'http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
+  launchctl setenv OLLAMA_NUM_PARALLEL 4
+  launchctl setenv OLLAMA_MAX_LOADED_MODELS 3
   open "/Applications/Ollama.app"
   # sleep 1 && ollama list
   # ./dist/ollama serve
