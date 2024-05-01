@@ -25,7 +25,7 @@ function patch_llama() {
   # custom patches for llama.cpp
   # Take a PR to llama.cpp, e.g. https://github.com/ggerganov/llama.cpp/pull/6707/files, get the fork and branch being requested to merge and apply it to the local llama.cpp (llm/llama.cpp)
   PRs=(
-    "https://github.com/ggerganov/llama.cpp/pull/6707" # Add CodeQwen support
+    # "https://github.com/ggerganov/llama.cpp/pull/6707" # Add CodeQwen support
   )
 
   cd "$OLLAMA_GIT_DIR/llm/llama.cpp" || exit
@@ -76,8 +76,11 @@ function patch_ollama() {
   fi
 
   echo "This is a gross hack as Ollama's build scripts don't seem to honour CMAKE variables properly"
-  sed -i '' "s/-DLLAMA_ACCELERATE=on/-DLLAMA_ALL_WARNINGS_3RD_PARTY=off -DLLAMA_ALL_WARNINGS=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.1 -DLLAMA_NATIVE=on -DLLAMA_CLBLAST=on -DLLAMA_F16C=on -DLLAMA_CURL=on -DCLBlast_DIR=\/opt\/homebrew\/Cellar\/clblast\/1.6.2\/ -Wno-dev/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
-  #   -DLLAMA_QKK_64=on -DLLAMA_BLAS_VENDOR=Apple -DLLAMA_VULKAN=on
+  sed -i '' "s/-DLLAMA_ACCELERATE=on/-DLLAMA_ALL_WARNINGS_3RD_PARTY=off -DLLAMA_ALL_WARNINGS=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on  -DLLAMA_F16C=on -DLLAMA_CURL=on  -Wno-dev/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  # -DLLAMA_BLAS_VENDOR=Apple -DLLAMA_VULKAN=on
+  # -DLLAMA_CLBLAST=on -DCLBlast_DIR=\/opt\/homebrew\/Cellar\/clblast\/1.6.2\/
+  # -DLLAMA_FMA=on -DLLAMA_PERF=on # these don't seem to speed anything up
+  # Do not enable -DLLAMA_QKK_64=on !!
 
   # add export BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS to the second line of the gen_darwin.sh and scripts/build_darwin.sh files
   gsed -i '2i export BLAS_INCLUDE_DIRS='$BLAS_INCLUDE_DIRS'' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
@@ -150,7 +153,7 @@ function update_git() {
   git fetch --tags --force
   git pull
   git submodule init
-  git submodule update
+  git submodule update --recursive
 }
 
 function set_version() {
