@@ -24,6 +24,9 @@ function store_error() {
 
 trap 'store_error "Error on line $LINENO"' ERR
 
+# absolute path to ./ollama/ollama_patches.diff
+PATCH_DIFF=$(dirname "$0")/ollama/ollama_patches.diff
+
 function patch_llama() {
   # custom patches for llama.cpp
   # Take a PR to llama.cpp, e.g. https://github.com/ggerganov/llama.cpp/pull/6707/files, get the fork and branch being requested to merge and apply it to the local llama.cpp (llm/llama.cpp)
@@ -69,6 +72,13 @@ function patch_ollama() {
   echo "---"
 
   echo "patching ollama with Sams tweaks"
+
+  # apply the diff patch
+  cd "$OLLAMA_GIT_DIR" || exit
+  set -e                          # exit on error
+  git apply --check "$PATCH_DIFF" # || store_error "Patch failed to apply cleanly, skipping..."
+  git apply "$PATCH_DIFF"
+  set +e # disable exit on error
 
   if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
     cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak
