@@ -174,6 +174,9 @@ function update_git() {
   git submodule init
   git rebase --abort
   git submodule update --remote --rebase --recursive
+  cd llm/llama.cpp || exit
+  git checkout origin/master
+  cd "$OLLAMA_GIT_DIR" || exit
 
   # shellcheck disable=SC2016
   # gsed -i 's/git submodule update --force ${LLAMACPP_DIR}/git submodule update --force --recursive --rebase --remote ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
