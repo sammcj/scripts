@@ -1,8 +1,56 @@
+diff --git a/api/types.go b/api/types.go
+index 7cfd5ff..e946ca7 100644
+--- a/api/types.go
++++ b/api/types.go
+@@ -133,6 +133,7 @@ type Options struct {
+ 	MirostatTau      float32  `json:"mirostat_tau,omitempty"`
+ 	MirostatEta      float32  `json:"mirostat_eta,omitempty"`
+ 	PenalizeNewline  bool     `json:"penalize_newline,omitempty"`
++	FlashAttn        bool     `json:"flash_attn,omitempty"`
+ 	Stop             []string `json:"stop,omitempty"`
+ }
+
+@@ -151,6 +152,7 @@ type Runner struct {
+ 	UseMMap   bool `json:"use_mmap,omitempty"`
+ 	UseMLock  bool `json:"use_mlock,omitempty"`
+ 	NumThread int  `json:"num_thread,omitempty"`
++	FlashAttn bool `json:"flash_attn,omitempty"`
+
+ 	// Unused: RopeFrequencyBase is ignored. Instead the value in the model will be used
+ 	RopeFrequencyBase float32 `json:"rope_frequency_base,omitempty"`
+diff --git a/cmd/interactive.go b/cmd/interactive.go
+index 5673fda..dbd581f 100644
+--- a/cmd/interactive.go
++++ b/cmd/interactive.go
+@@ -162,6 +162,7 @@ func generateInteractive(cmd *cobra.Command, opts runOptions) error {
+ 		fmt.Fprintln(os.Stderr, "  /set parameter repeat_penalty <float> How strongly to penalize repetitions")
+ 		fmt.Fprintln(os.Stderr, "  /set parameter repeat_last_n <int>    Set how far back to look for repetitions")
+ 		fmt.Fprintln(os.Stderr, "  /set parameter num_gpu <int>          The number of layers to send to the GPU")
++		fmt.Fprintln(os.Stderr, "  /set parameter flash_attn <bool>      Enable or disable flash attention")
+ 		fmt.Fprintln(os.Stderr, "  /set parameter stop \"<string>\", ...   Set the stop parameters")
+ 		fmt.Fprintln(os.Stderr, "")
+ 	}
 diff --git a/llm/ext_server/server.cpp b/llm/ext_server/server.cpp
-index 3448bcc..2a2186c 100644
+index 3448bcc..2e52782 100644
 --- a/llm/ext_server/server.cpp
 +++ b/llm/ext_server/server.cpp
-@@ -2124,6 +2124,7 @@ static void server_print_usage(const char *argv0, const gpt_params &params,
+@@ -140,6 +140,7 @@ struct server_slot {
+     std::vector<llama_token> cache_tokens;
+     std::vector<completion_token_output> generated_token_probs;
+
++    bool flash_attn = true;
+     bool infill = false;
+     bool embedding = false;
+     bool has_next_token = true;
+@@ -453,6 +454,7 @@ struct llama_server_context
+             slot.id = i;
+             slot.n_ctx = n_ctx_slot;
+             slot.n_predict = params.n_predict;
++            slot.flash_attn = params.flash_attn;
+
+             LOG_INFO("new slot", {
+                 {"slot_id",    slot.id},
+@@ -2124,6 +2126,7 @@ static void server_print_usage(const char *argv0, const gpt_params &params,
      printf("                            types: int, float, bool. example: --override-kv tokenizer.ggml.add_bos_token=bool:false\n");
      printf("  -gan N, --grp-attn-n N    set the group attention factor to extend context size through self-extend(default: 1=disabled), used together with group attention width `--grp-attn-w`\n");
      printf("  -gaw N, --grp-attn-w N    set the group attention width to extend context size through self-extend(default: 512), used together with group attention factor `--grp-attn-n`\n");
@@ -10,7 +58,7 @@ index 3448bcc..2a2186c 100644
      printf("  --chat-template JINJA_TEMPLATE\n");
      printf("                            set custom jinja chat template (default: template taken from model's metadata)\n");
      printf("                            Note: only commonly used templates are accepted, since we don't have jinja parser\n");
-@@ -2333,6 +2334,10 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
+@@ -2333,6 +2336,10 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
 
              params.grp_attn_n = std::stoi(argv[i]);
          }
