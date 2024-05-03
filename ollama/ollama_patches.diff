@@ -1,71 +1,48 @@
-diff --git a/api/types.go b/api/types.go
-index 7cfd5ff..e946ca7 100644
---- a/api/types.go
-+++ b/api/types.go
-@@ -133,6 +133,7 @@ type Options struct {
- 	MirostatTau      float32  `json:"mirostat_tau,omitempty"`
- 	MirostatEta      float32  `json:"mirostat_eta,omitempty"`
- 	PenalizeNewline  bool     `json:"penalize_newline,omitempty"`
-+	FlashAttn        bool     `json:"flash_attn,omitempty"`
- 	Stop             []string `json:"stop,omitempty"`
- }
-
-@@ -151,6 +152,7 @@ type Runner struct {
- 	UseMMap   bool `json:"use_mmap,omitempty"`
- 	UseMLock  bool `json:"use_mlock,omitempty"`
- 	NumThread int  `json:"num_thread,omitempty"`
-+	FlashAttn bool `json:"flash_attn,omitempty"`
-
- 	// Unused: RopeFrequencyBase is ignored. Instead the value in the model will be used
- 	RopeFrequencyBase float32 `json:"rope_frequency_base,omitempty"`
-diff --git a/cmd/interactive.go b/cmd/interactive.go
-index 5673fda..dbd581f 100644
---- a/cmd/interactive.go
-+++ b/cmd/interactive.go
-@@ -162,6 +162,7 @@ func generateInteractive(cmd *cobra.Command, opts runOptions) error {
- 		fmt.Fprintln(os.Stderr, "  /set parameter repeat_penalty <float> How strongly to penalize repetitions")
- 		fmt.Fprintln(os.Stderr, "  /set parameter repeat_last_n <int>    Set how far back to look for repetitions")
- 		fmt.Fprintln(os.Stderr, "  /set parameter num_gpu <int>          The number of layers to send to the GPU")
-+		fmt.Fprintln(os.Stderr, "  /set parameter flash_attn <bool>      Enable or disable flash attention")
- 		fmt.Fprintln(os.Stderr, "  /set parameter stop \"<string>\", ...   Set the stop parameters")
- 		fmt.Fprintln(os.Stderr, "")
- 	}
 diff --git a/llm/ext_server/server.cpp b/llm/ext_server/server.cpp
-index 3448bcc..2e52782 100644
+index 3448bcc5..ad1c9488 100644
 --- a/llm/ext_server/server.cpp
 +++ b/llm/ext_server/server.cpp
-@@ -140,6 +140,7 @@ struct server_slot {
-     std::vector<llama_token> cache_tokens;
-     std::vector<completion_token_output> generated_token_probs;
-
-+    bool flash_attn = true;
-     bool infill = false;
-     bool embedding = false;
-     bool has_next_token = true;
-@@ -453,6 +454,7 @@ struct llama_server_context
-             slot.id = i;
-             slot.n_ctx = n_ctx_slot;
-             slot.n_predict = params.n_predict;
-+            slot.flash_attn = params.flash_attn;
-
-             LOG_INFO("new slot", {
-                 {"slot_id",    slot.id},
-@@ -2124,6 +2126,7 @@ static void server_print_usage(const char *argv0, const gpt_params &params,
-     printf("                            types: int, float, bool. example: --override-kv tokenizer.ggml.add_bos_token=bool:false\n");
-     printf("  -gan N, --grp-attn-n N    set the group attention factor to extend context size through self-extend(default: 1=disabled), used together with group attention width `--grp-attn-w`\n");
-     printf("  -gaw N, --grp-attn-w N    set the group attention width to extend context size through self-extend(default: 512), used together with group attention factor `--grp-attn-n`\n");
-+    printf("  --flash_attn              enable flash attention (default: disabled)\n");
-     printf("  --chat-template JINJA_TEMPLATE\n");
-     printf("                            set custom jinja chat template (default: template taken from model's metadata)\n");
-     printf("                            Note: only commonly used templates are accepted, since we don't have jinja parser\n");
-@@ -2333,6 +2336,10 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
-
-             params.grp_attn_n = std::stoi(argv[i]);
+@@ -2106,6 +2106,7 @@ static void server_print_usage(const char *argv0, const gpt_params &params,
+     printf("  --embedding               enable embedding vector output (default: %s)\n", params.embedding ? "enabled" : "disabled");
+     printf("  -np N, --parallel N       number of slots for process requests (default: %d)\n", params.n_parallel);
+     printf("  -cb, --cont-batching      enable continuous batching (a.k.a dynamic batching) (default: disabled)\n");
++    printf("  -fa, --flash-attn enable  flash Attention (default: %s)\n", params.flash_attn ? "enabled" : "disabled");
+     printf("  -spf FNAME, --system-prompt-file FNAME\n");
+     printf("                            set a file to load a system prompt (initial prompt of all slots), this is useful for chat applications.\n");
+     printf("  -ctk TYPE, --cache-type-k TYPE\n");
+@@ -2527,6 +2528,10 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
+         {
+             params.cont_batching = true;
          }
-+        else if (arg == "--flash-attn" || arg == "-fa")
++        else if (arg == "-fa" || arg == "--flash-attn")
 +        {
 +            params.flash_attn = true;
 +        }
-         else if (arg == "--grp-attn-w" || arg == "-gaw")
+         else if (arg == "-np" || arg == "--parallel")
          {
              if (++i >= argc)
+@@ -2678,6 +2683,9 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
+             exit(1);
+         }
+     }
++
++    gpt_params_handle_model_default(params);
++
+     if (!params.kv_overrides.empty()) {
+         params.kv_overrides.emplace_back();
+         params.kv_overrides.back().key[0] = 0;
+diff --git a/llm/server.go b/llm/server.go
+index b41f393d..0afc5eea 100644
+--- a/llm/server.go
++++ b/llm/server.go
+@@ -205,6 +205,10 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
+ 	}
+ 	params = append(params, "--parallel", fmt.Sprintf("%d", numParallel))
+
++	if other_args := os.Getenv("OLLAMA_LLAMA_EXTRA_ARGS"); other_args != "" {
++		params = append(params, strings.Split(other_args, ",")...)
++	}
++
+ 	for i := 0; i < len(servers); i++ {
+ 		dir := availableServers[servers[i]]
+ 		if dir == "" {
