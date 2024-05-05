@@ -15,8 +15,8 @@ export GIN_MODE=release
 export BLAS_INCLUDE_DIRS=/opt/homebrew/Cellar/clblast/1.6.2/,/opt/homebrew/Cellar/openblas/0.3.27/include,/opt/homebrew/Cellar/gsl/2.7.1/include/gsl,/opt/homebrew/Cellar/clblast/1.6.2/include
 export OLLAMA_NUM_PARALLEL=8
 export OLLAMA_MAX_LOADED_MODELS=3
-export OLLAMA_KEEP_ALIVE=10
-export OLLAMA_LLAMA_EXTRA_ARGS="-fa,-cb"
+export OLLAMA_KEEP_ALIVE=15
+export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
 
 # a function that takes input (error output from another command), and stores it in a variable for printing later
 function store_error() {
@@ -76,8 +76,17 @@ function patch_ollama() {
 
   # # apply the diff patch
   cd "$OLLAMA_GIT_DIR" || exit
-  git apply --check "$PATCH_DIFF" || exit 1
-  git apply "$PATCH_DIFF" || exit 1
+  # patch -p1 <"$PATCH_DIFF" || exit 1
+  # git apply --check "$PATCH_DIFF" || exit 1
+  # git apply "$PATCH_DIFF" || exit 1
+
+  git remote add sammcj https://github.com/sammcj/ollama.git
+  git fetch sammcj
+  git branch -a
+
+  git checkout sammcj/main llm/server.go
+  git checkout sammcj/main llm/ext_server/server.cpp
+  git checkout sammcj/main api/types.go
 
   if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
     cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak
@@ -224,11 +233,26 @@ function set_version() {
 
 function run_app() {
   cd "$OLLAMA_GIT_DIR" || exit
-  launchctl setenv OLLAMA_ORIGINS 'http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
-  launchctl setenv OLLAMA_NUM_PARALLEL 8
-  launchctl setenv OLLAMA_MAX_LOADED_MODELS 3
-  launchctl setenv OLLAMA_KEEP_ALIVE 10
-  launchctl setenv OLLAMA_LLAMA_EXTRA_ARGS "-fa,-cb"
+
+  if [ -z "$(launchctl getenv OLLAMA_ORIGINS)" ]; then
+    echo "setting OLLAMA_ORIGINS"
+    launchctl setenv OLLAMA_ORIGINS "$OLLAMA_ORIGINS"
+  fi
+
+  if [ -z "$(launchctl getenv OLLAMA_NUM_PARALLEL)" ]; then
+    echo "setting OLLAMA_NUM_PARALLEL"
+    launchctl setenv OLLAMA_NUM_PARALLEL "$OLLAMA_NUM_PARALLEL"
+  fi
+
+  if [ -z "$(launchctl getenv OLLAMA_MAX_LOADED_MODELS)" ]; then
+    echo "setting OLLAMA_MAX_LOADED_MODELS"
+    launchctl setenv OLLAMA_MAX_LOADED_MODELS "$OLLAMA_MAX_LOADED_MODELS"
+  fi
+
+  if [ -z "$(launchctl getenv OLLAMA_KEEP_ALIVE)" ]; then
+    echo "setting OLLAMA_KEEP_ALIVE"
+    launchctl setenv OLLAMA_KEEP_ALIVE "$OLLAMA_KEEP_ALIVE"
+  fi
 
   # if OLLAMA_WAS_RUNNING=true, restart the app
   if [ "$OLLAMA_WAS_RUNNING" = true ]; then
