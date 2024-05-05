@@ -77,16 +77,16 @@ function patch_ollama() {
   # # apply the diff patch
   cd "$OLLAMA_GIT_DIR" || exit
   # patch -p1 <"$PATCH_DIFF" || exit 1
-  # git apply --check "$PATCH_DIFF" || exit 1
-  # git apply "$PATCH_DIFF" || exit 1
+  git apply --check "$PATCH_DIFF" || exit 1
+  git apply "$PATCH_DIFF" || exit 1
 
-  git remote add sammcj https://github.com/sammcj/ollama.git
-  git fetch sammcj
-  git branch -a
+  # git remote add sammcj https://github.com/sammcj/ollama.git
+  # git fetch sammcj
+  # git branch -a
 
-  git checkout sammcj/main llm/server.go
-  git checkout sammcj/main llm/ext_server/server.cpp
-  git checkout sammcj/main api/types.go
+  # git checkout sammcj/main llm/server.go
+  # git checkout sammcj/main llm/ext_server/server.cpp
+  # git checkout sammcj/main api/types.go
 
   if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
     cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak
