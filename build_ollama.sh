@@ -33,6 +33,7 @@ function patch_llama() {
   # Take a PR to llama.cpp, e.g. https://github.com/ggerganov/llama.cpp/pull/6707/files, get the fork and branch being requested to merge and apply it to the local llama.cpp (llm/llama.cpp)
   PRs=(
     # "https://github.com/ggerganov/llama.cpp/pull/6707" # Add CodeQwen support
+    # "https://github.com/ollama/ollama/pull/4120/files" # add flash_attn
   )
 
   cd "$OLLAMA_GIT_DIR/llm/llama.cpp" || exit
@@ -76,17 +77,20 @@ function patch_ollama() {
 
   # # apply the diff patch
   cd "$OLLAMA_GIT_DIR" || exit
-  # patch -p1 <"$PATCH_DIFF" || exit 1
-  git apply --check "$PATCH_DIFF" || exit 1
-  git apply "$PATCH_DIFF" || exit 1
+  # # patch -p1 <"$PATCH_DIFF" || exit 1
+  # git apply --check "$PATCH_DIFF" || exit 1
+  # git apply "$PATCH_DIFF" || exit 1
 
-  # git remote add sammcj https://github.com/sammcj/ollama.git
-  # git fetch sammcj
-  # git branch -a
+  git remote add sammcj https://github.com/sammcj/ollama.git
+  git fetch sammcj
+  git branch -a
 
-  # git checkout sammcj/main llm/server.go
-  # git checkout sammcj/main llm/ext_server/server.cpp
-  # git checkout sammcj/main api/types.go
+  git checkout sammcj/main llm/server.go
+  git checkout sammcj/main llm/ext_server/server.cpp
+  git checkout sammcj/main api/types.go
+
+  # replace FlashAttn: false, with FlashAttn: true, in api/types.go
+  gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
 
   if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
     cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak

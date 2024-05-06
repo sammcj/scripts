@@ -1,16 +1,26 @@
-diff --git a/llm/ext_server/server.cpp b/llm/ext_server/server.cpp
-index 3448bcc5..ad1c9488 100644
---- a/llm/ext_server/server.cpp
-+++ b/llm/ext_server/server.cpp
-@@ -2106,6 +2106,7 @@ static void server_print_usage(const char *argv0, const gpt_params &params,
+diff --git allm/ext_server/server.cpp bllm/ext_server/server.cpp
+index df28c41..1fe0eae 100644
+--- allm/ext_server/server.cpp
++++ bllm/ext_server/server.cpp
+@@ -2104,6 +2104,7 @@ static void server_print_usage(const char *argv0, const gpt_params &params,
      printf("  --embedding               enable embedding vector output (default: %s)\n", params.embedding ? "enabled" : "disabled");
      printf("  -np N, --parallel N       number of slots for process requests (default: %d)\n", params.n_parallel);
      printf("  -cb, --cont-batching      enable continuous batching (a.k.a dynamic batching) (default: disabled)\n");
-+    printf("  -fa, --flash-attn enable  flash Attention (default: %s)\n", params.flash_attn ? "enabled" : "disabled");
++    printf("  -fa, --flash-attn         enable Flash Attention (default: %s)\n", params.flash_attn ? "enabled" : "disabled");
      printf("  -spf FNAME, --system-prompt-file FNAME\n");
      printf("                            set a file to load a system prompt (initial prompt of all slots), this is useful for chat applications.\n");
      printf("  -ctk TYPE, --cache-type-k TYPE\n");
-@@ -2527,6 +2528,10 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
+@@ -2505,7 +2506,8 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
+         {
+             params.use_mmap = false;
+         }
+-        else if (arg == "--numa") {
++        else if (arg == "--numa")
++        {
+             if (++i >= argc) {
+                 invalid_param = true;
+                 break;
+@@ -2525,6 +2527,10 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
          {
              params.cont_batching = true;
          }
@@ -21,7 +31,27 @@ index 3448bcc5..ad1c9488 100644
          else if (arg == "-np" || arg == "--parallel")
          {
              if (++i >= argc)
-@@ -2678,6 +2683,9 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
+@@ -2533,7 +2539,8 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
+                 break;
+             }
+             params.n_parallel = std::stoi(argv[i]);
+-        } else if (arg == "-n" || arg == "--n-predict")
++        }
++        else if (arg == "-n" || arg == "--n-predict")
+         {
+             if (++i >= argc)
+             {
+@@ -2541,7 +2548,8 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
+                 break;
+             }
+             params.n_predict = std::stoi(argv[i]);
+-        } else if (arg == "-spf" || arg == "--system-prompt-file")
++        }
++        else if (arg == "-spf" || arg == "--system-prompt-file")
+         {
+             if (++i >= argc)
+             {
+@@ -2676,6 +2684,9 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
              exit(1);
          }
      }
@@ -31,26 +61,33 @@ index 3448bcc5..ad1c9488 100644
      if (!params.kv_overrides.empty()) {
          params.kv_overrides.emplace_back();
          params.kv_overrides.back().key[0] = 0;
-diff --git a/llm/server.go b/llm/server.go
-index b41f393d..0afc5eea 100644
---- a/llm/server.go
-+++ b/llm/server.go
-@@ -205,6 +205,10 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
- 	}
- 	params = append(params, "--parallel", fmt.Sprintf("%d", numParallel))
 
-+	if other_args := os.Getenv("OLLAMA_LLAMA_EXTRA_ARGS"); other_args != "" {
-+		params = append(params, strings.Split(other_args, ",")...)
+
+diff --git allm/server.go bllm/server.go
+index 2272ac8..6819606 100644
+--- allm/server.go
++++ bllm/server.go
+@@ -194,6 +194,15 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
+ 		params = append(params, "--numa")
+ 	}
+
++	if opts.FlashAttn {
++    flashAttnSupported := (gpus[0].Library == "cuda" && gpus[0].Major >= 7 || gpus[0].Library == "metal")
++    if flashAttnSupported {
++        params = append(params, "--flash-attn")
++    } else {
++        slog.Warn("flash attention is not supported on your current hardware configuration, it is now disabled")
++    }
 +	}
 +
- 	for i := 0; i < len(servers); i++ {
- 		dir := availableServers[servers[i]]
- 		if dir == "" {
+ 	// "--cont-batching", // TODO - doesn't seem to have any noticeable perf change for multiple requests
+ 	numParallel := envconfig.NumParallel
+ 	params = append(params, "--parallel", fmt.Sprintf("%d", numParallel))
 
-diff --git a/api/types.go b/api/types.go
+diff --git aapi/types.go bapi/types.go
 index 7cfd5ff..676f098 100644
---- a/api/types.go
-+++ b/api/types.go
+--- aapi/types.go
++++ bapi/types.go
 @@ -151,6 +151,7 @@ type Runner struct {
  	UseMMap   bool `json:"use_mmap,omitempty"`
  	UseMLock  bool `json:"use_mlock,omitempty"`
