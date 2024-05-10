@@ -89,6 +89,8 @@ function patch_ollama() {
   git checkout sammcj/main llm/ext_server/server.cpp
   git checkout sammcj/main api/types.go
 
+  rm -f "$OLLAMA_GIT_DIR"/llm/patches/05-clip-fix.diff
+
   # replace FlashAttn: false, with FlashAttn: true, in api/types.go
   gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
 
