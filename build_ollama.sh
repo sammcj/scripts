@@ -17,6 +17,7 @@ export OLLAMA_NUM_PARALLEL=6
 export OLLAMA_MAX_LOADED_MODELS=3
 export OLLAMA_KEEP_ALIVE='60m'
 export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
+export BUILD_LLAMA_CPP_FIRST="true"
 
 # a function that takes input (error output from another command), and stores it in a variable for printing later
 function store_error() {
@@ -56,6 +57,48 @@ function patch_llama() {
       store_error "Patch from $PR failed to apply cleanly, skipping..."
     fi
   done
+}
+
+function build_llama_cpp() {
+  # this function builds the standalone llama.cpp project - NOT the one that Ollama uses, it's just handy to have as well
+  if [ "$BUILD_LLAMA_CPP_FIRST" != "true" ]; then
+    echo "skipping llama.cpp build"
+    return
+  fi
+
+  local llamadir
+  local macOSSDK
+
+  macOSSDK=$(xcrun --show-sdk-path)
+  ACCELERATE_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/Accelerate.framework"
+  FOUNDATION_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/Foundation.framework"
+  VECLIB_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/vecLib.framework"
+  CLBLAST_FRAMEWORK="/opt/homebrew/Cellar/clblast/1.6.2/"
+  BLAS_INCLUDE_DIRS="${CLBLAST_FRAMEWORK},${VECLIB_FRAMEWORK}"
+  CLBlast_DIR="/opt/homebrew/lib/cmake/CLBlast"
+
+  llamadir="${HOME}/git/llama.cpp"
+
+  pushd "${llamadir}" || return
+  local gitstatus
+  gitstatus=$(git pull)
+  if [[ "$gitstatus" == "Already up to date." ]]; then
+    echo "No updates to llama.cpp found"
+  else
+    echo "Updates to llama.cpp found, building and installing"
+    cmake . -Wno-dev \
+      -DLLAMA_CUDA=off -DLLAMA_METAL=on -DLLAMA_CLBLAST=on -DLLAMA_F16C=on -DLLAMA_RPC=on -DBUILD_SHARED_LIBS=on \
+      -DLLAMA_BLAS_VENDOR=Apple -DLLAMA_BUILD_EXAMPLES=on -DLLAMA_BUILD_TESTS=on -DLLAMA_BUILD_SERVER=on -DLLAMA_CCACHE=on \
+      -DLLAMA_ALL_WARNINGS=off -DLLAMA_CURL=on -DLLAMA_METAL_EMBED_LIBRARY=on -DLLAMA_NATIVE=on -DLLAMA_SERVER_VERBOSE=on \
+      -DLLAMA_CLBlast_DIR="${CLBlast_DIR}" -DLLAMA_ACCELERATE_FRAMEWORK="${ACCELERATE_FRAMEWORK}" -DLLAMA_FOUNDATION_FRAMEWORK="${FOUNDATION_FRAMEWORK}" &&
+      make -j 12 &&
+      make install
+
+    echo "****************************"
+    echo "Completed building llama.cpp"
+    echo "****************************"
+  fi
+  popd || return
 }
 
 function patch_ollama() {
@@ -107,24 +150,18 @@ function patch_ollama() {
   fi
 
   # comment out rm -rf ${LLAMACPP_DIR} in gen_common.sh
+  # shellcheck disable=SC2016
   gsed -i 's/rm -rf ${LLAMACPP_DIR}/echo not running rm -rf ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
 
   echo "This is a gross hack as Ollama's build scripts don't seem to honour CMAKE variables properly"
   sed -i '' "s/-DLLAMA_ACCELERATE=on/-DLLAMA_ALL_WARNINGS_3RD_PARTY=off -DLLAMA_ALL_WARNINGS=off -DLLAMA_ACCELERATE=on -DGGML_USE_ACCELERATE=1 -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on  -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_CURL=on  -Wno-dev/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
-  # -DLLAMA_BLAS_VENDOR=Apple -DLLAMA_VULKAN=on
-  # -DLLAMA_CLBLAST=on -DCLBlast_DIR=\/opt\/homebrew\/Cellar\/clblast\/1.6.2\/
   # -DLLAMA_FMA=on -DLLAMA_PERF=on # these don't seem to speed anything up
   # Do not enable -DLLAMA_QKK_64=on !!
 
   # patch the ggml build as well
-  # default: CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off '
-  # new: CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off -DLLAMA_ALL_WARNINGS_3RD_PARTY=off -DLLAMA_ALL_WARNINGS=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on  -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on'
   sed -i '' "s/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off '/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DGGML_USE_ACCELERATE=1 '/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
 
-  # find the line containing:
-  # "-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off ${CMAKE_DEFS}"
-  # and update it to:
-  # "-DCMAKE_OSX_DEPLOYMENT_TARGET=14.2 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=on -DLLAMA_ACCELERATE=on -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=on -DLLAMA_F16C=on -DLLAMA_F16C=on ${CMAKE_DEFS}"
+  # shellcheck disable=SC2016
   gsed -i 's/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off ${CMAKE_DEFS}/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=on -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_NATIVE=on -DGGML_USE_ACCELERATE=1 ${CMAKE_DEFS}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
 
   # llama_new_context_with_model: flash_attn = 0 should be 1
@@ -133,8 +170,8 @@ function patch_ollama() {
   gsed -i 's/cparams.flash_attn       = params.flash_attn;/cparams.flash_attn       = 1;/g' "$OLLAMA_GIT_DIR"/llm/llama.cpp/llama.cpp
 
   # add export BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS to the second line of the gen_darwin.sh and scripts/build_darwin.sh files
-  gsed -i '2i export BLAS_INCLUDE_DIRS='$BLAS_INCLUDE_DIRS'' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
-  gsed -i '2i export BLAS_INCLUDE_DIRS='$BLAS_INCLUDE_DIRS'' "$OLLAMA_GIT_DIR"/scripts/build_darwin.sh
+  gsed -i '2i export BLAS_INCLUDE_DIRS='"$BLAS_INCLUDE_DIRS"'' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  gsed -i '2i export BLAS_INCLUDE_DIRS='"$BLAS_INCLUDE_DIRS"'' "$OLLAMA_GIT_DIR"/scripts/build_darwin.sh
 
   # set ldflags to disable warnings spamming the output
   gsed -i '2i export LDFLAGS="-w"' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
@@ -273,6 +310,7 @@ function run_app() {
   # ./dist/ollama serve
 }
 
+build_llama_cpp || store_error "Failed to build llama.cpp standalone"
 update_git || store_error "Failed to update git"
 set_version || store_error "Failed to set version"
 patch_ollama || store_error "Failed to patch ollama"
