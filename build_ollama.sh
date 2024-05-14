@@ -13,9 +13,9 @@ PATCH_OLLAMA=$(echo "$PATCH_OLLAMA" | tr '[:upper:]' '[:lower:]')
 export OLLAMA_DEBUG=0
 export GIN_MODE=release
 export BLAS_INCLUDE_DIRS=/opt/homebrew/Cellar/clblast/1.6.2/,/opt/homebrew/Cellar/openblas/0.3.27/include,/opt/homebrew/Cellar/gsl/2.7.1/include/gsl,/opt/homebrew/Cellar/clblast/1.6.2/include
-export OLLAMA_NUM_PARALLEL=8
+export OLLAMA_NUM_PARALLEL=6
 export OLLAMA_MAX_LOADED_MODELS=3
-export OLLAMA_KEEP_ALIVE=15
+export OLLAMA_KEEP_ALIVE='60m'
 export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
 
 # a function that takes input (error output from another command), and stores it in a variable for printing later
@@ -89,10 +89,14 @@ function patch_ollama() {
   git checkout sammcj/main llm/ext_server/server.cpp
   git checkout sammcj/main api/types.go
 
-  rm -f "$OLLAMA_GIT_DIR"/llm/patches/05-clip-fix.diff
+  # update golang modules
+  go get -u
 
   # replace FlashAttn: false, with FlashAttn: true, in api/types.go
   gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
+
+  # remove broken patches/05-clip-fix.diff
+  rm -f "$OLLAMA_GIT_DIR"/llm/patches/05-clip-fix.diff "$OLLAMA_GIT_DIR"/llm/patches/03-load_exception.diff
 
   if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
     cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak
