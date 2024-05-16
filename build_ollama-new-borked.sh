@@ -17,7 +17,8 @@ export OLLAMA_NUM_PARALLEL=6
 export OLLAMA_MAX_LOADED_MODELS=3
 export OLLAMA_KEEP_ALIVE='60m'
 export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
-export BUILD_LLAMA_CPP_FIRST="true"
+export BUILD_LLAMA_CPP=${BUILD_LLAMA_CPP:-"true"}
+export BUILD_OLLAMA=${BUILD_OLLAMA:-"true"}
 
 # a function that takes input (error output from another command), and stores it in a variable for printing later
 function store_error() {
@@ -27,17 +28,19 @@ function store_error() {
 trap 'store_error "Error on line $LINENO"' ERR
 
 # absolute path to ./ollama/ollama_patches.diff
-PATCH_DIFF="${HOME}/git/sammcj/scripts/ollama/ollama_patches.diff"
+OLLAMA_PATCH_DIFF="${HOME}/git/sammcj/scripts/ollama/ollama_patches.diff"
 
 function patch_llama() {
   # custom patches for llama.cpp
+  local llamadir=$1
+
   # Take a PR to llama.cpp, e.g. https://github.com/ggerganov/llama.cpp/pull/6707/files, get the fork and branch being requested to merge and apply it to the local llama.cpp (llm/llama.cpp)
   PRs=(
-    "https://github.com/ggerganov/llama.cpp/pull/7154"
-    "https://github.com/ggerganov/llama.cpp/pull/7305" # add server support for the RPC server
+    # "https://github.com/ggerganov/llama.cpp/pull/7154"
+    # "https://github.com/ggerganov/llama.cpp/pull/7305" # add server support for the RPC backend
   )
 
-  cd "$OLLAMA_GIT_DIR/llm/llama.cpp" || exit
+  cd "$llamadir" || exit
 
   for PR in "${PRs[@]}"; do
     tput setaf 7
@@ -61,13 +64,8 @@ function patch_llama() {
 
 function build_llama_cpp() {
   # this function builds the standalone llama.cpp project - NOT the one that Ollama uses, it's just handy to have as well
-  if [ "$BUILD_LLAMA_CPP_FIRST" != "true" ]; then
-    echo "skipping llama.cpp build"
-    return
-  fi
-
-  local llamadir
   local macOSSDK
+  local llamadir=$1
 
   macOSSDK=$(xcrun --show-sdk-path)
   ACCELERATE_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/Accelerate.framework"
@@ -76,8 +74,6 @@ function build_llama_cpp() {
   CLBLAST_FRAMEWORK="/opt/homebrew/Cellar/clblast/1.6.2/"
   BLAS_INCLUDE_DIRS="${CLBLAST_FRAMEWORK},${VECLIB_FRAMEWORK}"
   CLBlast_DIR="/opt/homebrew/lib/cmake/CLBlast"
-
-  llamadir="${HOME}/git/llama.cpp"
 
   pushd "${llamadir}" || return
   local gitstatus
@@ -89,10 +85,12 @@ function build_llama_cpp() {
     cmake . -Wno-dev \
       -DLLAMA_CUDA=off -DLLAMA_METAL=on -DLLAMA_CLBLAST=on -DLLAMA_F16C=on -DLLAMA_RPC=on -DBUILD_SHARED_LIBS=on \
       -DLLAMA_BLAS_VENDOR=Apple -DLLAMA_BUILD_EXAMPLES=on -DLLAMA_BUILD_TESTS=on -DLLAMA_BUILD_SERVER=on -DLLAMA_CCACHE=on \
-      -DLLAMA_ALL_WARNINGS=off -DLLAMA_CURL=on -DLLAMA_METAL_EMBED_LIBRARY=on -DLLAMA_NATIVE=on -DLLAMA_SERVER_VERBOSE=on \
+      -DLLAMA_ALL_WARNINGS=off -DLLAMA_CURL=on -DLLAMA_METAL_EMBED_LIBRARY=on -DLLAMA_NATIVE=on -DLLAMA_SERVER_VERBOSE=on -DLLAMA_RPC=on \
       -DLLAMA_CLBlast_DIR="${CLBlast_DIR}" -DLLAMA_ACCELERATE_FRAMEWORK="${ACCELERATE_FRAMEWORK}" -DLLAMA_FOUNDATION_FRAMEWORK="${FOUNDATION_FRAMEWORK}" &&
       make -j 12 &&
       make install
+
+    cp "${HOME}/git/llama.cpp/libllama.dylib" "/${HOME}/.wasmedge/lib/libllama.dylib"
 
     echo "****************************"
     echo "Completed building llama.cpp"
@@ -102,27 +100,17 @@ function build_llama_cpp() {
 }
 
 function patch_ollama() {
+
   if [ "$PATCH_OLLAMA" != true ]; then
     echo "skipping patching of ollama build config"
     return
   fi
 
-  echo "---"
-  # echo "TEMPORARY patch of IQ3_XS etc..."
-  # git remote add mann1x https://github.com/mann1x/ollama.git || true
-  # git fetch mann1x
-  # merge non-interactively
-  # git merge upstream/mannix-gguf --no-edit
-  # echo "patched main with https://github.com/mann1x/ollama.git / mannix-gguf"
-  echo "---"
-
   echo "patching ollama with Sams tweaks"
 
   # # apply the diff patch
   cd "$OLLAMA_GIT_DIR" || exit
-  git apply "$PATCH_DIFF" || exit 1
-  # git apply --check "$PATCH_DIFF" || exit 1
-  # git apply "$PATCH_DIFF" || exit 1
+  git apply "$OLLAMA_PATCH_DIFF" || exit 1
 
   git remote add sammcj https://github.com/sammcj/ollama.git
   git fetch sammcj
@@ -154,7 +142,7 @@ function patch_ollama() {
   gsed -i 's/rm -rf ${LLAMACPP_DIR}/echo not running rm -rf ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
 
   echo "This is a gross hack as Ollama's build scripts don't seem to honour CMAKE variables properly"
-  sed -i '' "s/-DLLAMA_ACCELERATE=on/-DLLAMA_ALL_WARNINGS_3RD_PARTY=off -DLLAMA_ALL_WARNINGS=off -DLLAMA_ACCELERATE=on -DGGML_USE_ACCELERATE=1 -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on  -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_CURL=on  -Wno-dev/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  sed -i '' "s/-DLLAMA_ACCELERATE=on/-DLLAMA_ALL_WARNINGS_3RD_PARTY=off -DLLAMA_ALL_WARNINGS=off -DLLAMA_ACCELERATE=on -DGGML_USE_ACCELERATE=1 -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on  -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_CURL=on -DLLAMA_RPC=on -Wno-dev/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
   # -DLLAMA_FMA=on -DLLAMA_PERF=on # these don't seem to speed anything up
   # Do not enable -DLLAMA_QKK_64=on !!
 
@@ -258,9 +246,33 @@ function update_git() {
   cd "$OLLAMA_GIT_DIR" || exit
 
   # shellcheck disable=SC2016
-  # gsed -i 's/git submodule update --force ${LLAMACPP_DIR}/git submodule update --force --recursive --rebase --remote ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
-  # instead completely remove the submodule update line
   gsed -i '/git submodule update --force ${LLAMACPP_DIR}/d' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
+
+  set +e
+}
+
+function update_llama_cpp_git() {
+  llamadir=$1
+
+  if [ ! -d "$llamadir" ]; then
+    echo "cloning llama git repo"
+    # one directory up from the git repo
+    BASE_DIR=$(dirname "$llamadir")
+    cd "$BASE_DIR" || exit
+    git clone https://github.com/ggerganov/llama.cpp.git --depth=1
+  fi
+
+  echo "updating llama.cpp git repo"
+  cd "$llamadir" || exit
+  git reset --hard HEAD
+
+  set -e
+
+  # force pull any tags
+  git fetch --force
+  git pull
+  git rebase --abort || true
+  git checkout origin/master
 
   set +e
 }
@@ -301,24 +313,28 @@ function run_app() {
     launchctl setenv OLLAMA_KEEP_ALIVE "$OLLAMA_KEEP_ALIVE"
   fi
 
-  # if OLLAMA_WAS_RUNNING=true, restart the app
   if [ "$OLLAMA_WAS_RUNNING" = true ]; then
     echo "Ollama was running, restarting..."
     open "/Applications/Ollama.app"
   fi
-  # sleep 1 && ollama list
-  # ./dist/ollama serve
 }
 
-build_llama_cpp || store_error "Failed to build llama.cpp standalone"
-update_git || store_error "Failed to update git"
-set_version || store_error "Failed to set version"
-patch_ollama || store_error "Failed to patch ollama"
-patch_llama || store_error "Failed to patch llama"
-build_cli || store_error "Failed to build ollama cli"
-build_app || store_error "Failed to build ollama app"
-update_fw_rules || store_error "Failed to update firewall rules"
-run_app || store_error "Failed to run app"
+if [ "$BUILD_LLAMA_CPP" == "true" ]; then
+  update_llama_cpp_git "${HOME}/git/llama.cpp" || store_error "Failed to update llama.cpp git"
+  patch_llama "${HOME}/git/llama.cpp" || store_error "Failed to patch llama"
+  build_llama_cpp "${HOME}/git/llama.cpp" || store_error "Failed to build llama.cpp standalone"
+fi
+
+if [ "$BUILD_OLLAMA" == "true" ]; then
+  update_git || store_error "Failed to update git"
+  set_version || store_error "Failed to set version"
+  patch_llama "${OLLAMA_GIT_DIR}/llm/llama.cpp" || store_error "Failed to patch llama"
+  patch_ollama "${OLLAMA_GIT_DIR}/llm/llama.cpp" || store_error "Failed to patch ollama"
+  build_cli || store_error "Failed to build ollama cli"
+  build_app || store_error "Failed to build ollama app"
+  update_fw_rules || store_error "Failed to update firewall rules"
+  run_app || store_error "Failed to run app"
+fi
 
 # unset the error trap
 trap - ERR
