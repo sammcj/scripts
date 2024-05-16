@@ -33,8 +33,7 @@ function patch_llama() {
   # custom patches for llama.cpp
   # Take a PR to llama.cpp, e.g. https://github.com/ggerganov/llama.cpp/pull/6707/files, get the fork and branch being requested to merge and apply it to the local llama.cpp (llm/llama.cpp)
   PRs=(
-    # "https://github.com/ggerganov/llama.cpp/pull/6707" # Add CodeQwen support
-    # "https://github.com/ollama/ollama/pull/4120/files" # add flash_attn
+    "https://github.com/ggerganov/llama.cpp/pull/7154"
   )
 
   cd "$OLLAMA_GIT_DIR/llm/llama.cpp" || exit
@@ -108,19 +107,19 @@ function patch_ollama() {
   fi
 
   echo "---"
-  echo "TEMPORARY patch of IQ3_XS etc..."
-  git remote add mann1x https://github.com/mann1x/ollama.git || true
-  git fetch mann1x
+  # echo "TEMPORARY patch of IQ3_XS etc..."
+  # git remote add mann1x https://github.com/mann1x/ollama.git || true
+  # git fetch mann1x
   # merge non-interactively
-  git merge upstream/mannix-gguf --no-edit
-  echo "patched main with https://github.com/mann1x/ollama.git / mannix-gguf"
+  # git merge upstream/mannix-gguf --no-edit
+  # echo "patched main with https://github.com/mann1x/ollama.git / mannix-gguf"
   echo "---"
 
   echo "patching ollama with Sams tweaks"
 
   # # apply the diff patch
   cd "$OLLAMA_GIT_DIR" || exit
-  # # patch -p1 <"$PATCH_DIFF" || exit 1
+  git apply "$PATCH_DIFF" || exit 1
   # git apply --check "$PATCH_DIFF" || exit 1
   # git apply "$PATCH_DIFF" || exit 1
 
@@ -139,7 +138,7 @@ function patch_ollama() {
   gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
 
   # remove broken patches/05-clip-fix.diff
-  rm -f "$OLLAMA_GIT_DIR"/llm/patches/05-clip-fix.diff "$OLLAMA_GIT_DIR"/llm/patches/03-load_exception.diff
+  rm -f "$OLLAMA_GIT_DIR"/llm/patches/03-load_exception.diff "$OLLAMA_GIT_DIR"/llm/patches/05-clip-fix.diff
 
   if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
     cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak

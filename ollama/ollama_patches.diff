@@ -1,106 +1,83 @@
-diff --git allm/ext_server/server.cpp bllm/ext_server/server.cpp
-index df28c41..1fe0eae 100644
---- allm/ext_server/server.cpp
-+++ bllm/ext_server/server.cpp
-@@ -2104,6 +2104,7 @@ static void server_print_usage(const char *argv0, const gpt_params &params,
-     printf("  --embedding               enable embedding vector output (default: %s)\n", params.embedding ? "enabled" : "disabled");
-     printf("  -np N, --parallel N       number of slots for process requests (default: %d)\n", params.n_parallel);
-     printf("  -cb, --cont-batching      enable continuous batching (a.k.a dynamic batching) (default: disabled)\n");
-+    printf("  -fa, --flash-attn         enable Flash Attention (default: %s)\n", params.flash_attn ? "enabled" : "disabled");
-     printf("  -spf FNAME, --system-prompt-file FNAME\n");
-     printf("                            set a file to load a system prompt (initial prompt of all slots), this is useful for chat applications.\n");
-     printf("  -ctk TYPE, --cache-type-k TYPE\n");
-@@ -2505,7 +2506,8 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
-         {
-             params.use_mmap = false;
-         }
--        else if (arg == "--numa") {
-+        else if (arg == "--numa")
-+        {
-             if (++i >= argc) {
-                 invalid_param = true;
-                 break;
-@@ -2525,6 +2527,10 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
-         {
-             params.cont_batching = true;
-         }
-+        else if (arg == "-fa" || arg == "--flash-attn")
-+        {
-+            params.flash_attn = true;
-+        }
-         else if (arg == "-np" || arg == "--parallel")
-         {
-             if (++i >= argc)
-@@ -2533,7 +2539,8 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
-                 break;
-             }
-             params.n_parallel = std::stoi(argv[i]);
--        } else if (arg == "-n" || arg == "--n-predict")
-+        }
-+        else if (arg == "-n" || arg == "--n-predict")
-         {
-             if (++i >= argc)
-             {
-@@ -2541,7 +2548,8 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
-                 break;
-             }
-             params.n_predict = std::stoi(argv[i]);
--        } else if (arg == "-spf" || arg == "--system-prompt-file")
-+        }
-+        else if (arg == "-spf" || arg == "--system-prompt-file")
-         {
-             if (++i >= argc)
-             {
-@@ -2676,6 +2684,9 @@ static void server_params_parse(int argc, char **argv, server_params &sparams,
-             exit(1);
-         }
-     }
-+
-+    gpt_params_handle_model_default(params);
-+
-     if (!params.kv_overrides.empty()) {
-         params.kv_overrides.emplace_back();
-         params.kv_overrides.back().key[0] = 0;
+diff --git a/llm/filetype.go b/llm/filetype.go
+index e5e9410..242bfba 100644
+--- a/llm/filetype.go
++++ b/llm/filetype.go
+@@ -29,6 +29,11 @@ const (
+ 	fileTypeQ2_K_S
+ 	fileTypeQ3_K_XS
+ 	fileTypeIQ3_XXS
++	fileTypeIQ1_S
++	fileTypeIQ4_NL
++	fileTypeIQ3_S
++	fileTypeIQ2_S
++	fileTypeIQ4_XS
 
-
-diff --git allm/server.go bllm/server.go
-index 2272ac8..6819606 100644
---- allm/server.go
-+++ bllm/server.go
-@@ -194,6 +194,15 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
- 		params = append(params, "--numa")
+ 	fileTypeUnknown
+ )
+@@ -79,6 +84,16 @@ func ParseFileType(s string) (fileType, error) {
+ 		return fileTypeQ3_K_XS, nil
+ 	case "IQ3_XXS":
+ 		return fileTypeIQ3_XXS, nil
++	case "IQ1_S":
++		return fileTypeIQ1_S, nil
++	case "IQ4_NL":
++		return fileTypeIQ4_NL, nil
++	case "IQ3_S":
++		return fileTypeIQ3_S, nil
++	case "IQ2_S":
++		return fileTypeIQ2_S, nil
++	case "IQ4_XS":
++		return fileTypeIQ4_XS, nil
+ 	default:
+ 		return fileTypeUnknown, fmt.Errorf("unknown fileType: %s", s)
  	}
-
-+	if opts.FlashAttn {
-+    flashAttnSupported := (gpus[0].Library == "cuda" && gpus[0].Major >= 7 || gpus[0].Library == "metal")
-+    if flashAttnSupported {
-+        params = append(params, "--flash-attn")
-+    } else {
-+        slog.Warn("flash attention is not supported on your current hardware configuration, it is now disabled")
-+    }
-+	}
-+
- 	// "--cont-batching", // TODO - doesn't seem to have any noticeable perf change for multiple requests
- 	numParallel := envconfig.NumParallel
- 	params = append(params, "--parallel", fmt.Sprintf("%d", numParallel))
-
-diff --git aapi/types.go bapi/types.go
-index 7cfd5ff..676f098 100644
---- aapi/types.go
-+++ bapi/types.go
-@@ -151,6 +151,7 @@ type Runner struct {
- 	UseMMap   bool `json:"use_mmap,omitempty"`
- 	UseMLock  bool `json:"use_mlock,omitempty"`
- 	NumThread int  `json:"num_thread,omitempty"`
-+	FlashAttn bool `json:"flash_attn,omitempty"`
-
- 	// Unused: RopeFrequencyBase is ignored. Instead the value in the model will be used
- 	RopeFrequencyBase float32 `json:"rope_frequency_base,omitempty"`
-@@ -428,6 +429,7 @@ func DefaultOptions() Options {
- 			UseMLock:  false,
- 			UseMMap:   true,
- 			UseNUMA:   false,
-+			FlashAttn: false, // for CPU only compatibility
- 		},
+@@ -130,6 +145,16 @@ func (t fileType) String() string {
+ 		return "Q3_K_XS"
+ 	case fileTypeIQ3_XXS:
+ 		return "IQ3_XXS"
++	case fileTypeIQ1_S:
++		return "IQ1_S"
++	case fileTypeIQ4_NL:
++		return "IQ4_NL"
++	case fileTypeIQ3_S:
++		return "IQ3_S"
++	case fileTypeIQ2_S:
++		return "IQ2_S"
++	case fileTypeIQ4_XS:
++		return "IQ4_XS"
+ 	default:
+ 		return "unknown"
  	}
- }
+diff --git a/llm/ggml.go b/llm/ggml.go
+index 40089be..d02c4e1 100644
+--- a/llm/ggml.go
++++ b/llm/ggml.go
+@@ -125,9 +125,9 @@ type Tensor struct {
+
+ func (t Tensor) blockSize() uint64 {
+ 	switch {
+-	case t.Kind < 2:
++	case t.Kind < 2 || (t.Kind > 23 && t.Kind < 29):
+ 		return 1
+-	case t.Kind < 10:
++	case t.Kind < 10 || t.Kind == 20:
+ 		return 32
+ 	default:
+ 		return 256
+@@ -172,6 +172,16 @@ func (t Tensor) typeSize() uint64 {
+ 		return 2 + 2*blockSize/8 + blockSize/32
+ 	case 18: // IQ3_XXS
+ 		return 2 + 3*blockSize/8
++	case 19: // IQ1_S
++		return 2 + blockSize/8 + blockSize/16
++	case 20: // IQ4_NL
++		return 2 + blockSize/2
++	case 21: // IQ3_S
++		return 2 + 2*blockSize/8 + blockSize/8 + blockSize/32 + 4
++	case 22: // IQ2_S
++		return 2 + blockSize/4 + blockSize/16
++	case 23: // IQ4_XS
++		return 4 + blockSize/2 + blockSize/64
+ 	default:
+ 		return 0
+ 	}
