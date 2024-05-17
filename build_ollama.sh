@@ -33,8 +33,8 @@ function patch_llama() {
   # custom patches for llama.cpp
   # Take a PR to llama.cpp, e.g. https://github.com/ggerganov/llama.cpp/pull/6707/files, get the fork and branch being requested to merge and apply it to the local llama.cpp (llm/llama.cpp)
   PRs=(
-    "https://github.com/ggerganov/llama.cpp/pull/7154"
-    "https://github.com/ggerganov/llama.cpp/pull/7305" # add server support for the RPC server
+    # "https://github.com/ggerganov/llama.cpp/pull/7154"
+    # "https://github.com/ggerganov/llama.cpp/pull/7305" # add server support for the RPC server
   )
 
   cd "$OLLAMA_GIT_DIR/llm/llama.cpp" || exit
