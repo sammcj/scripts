@@ -86,6 +86,8 @@ function build_llama_cpp() {
     echo "No updates to llama.cpp found"
   else
     echo "Updates to llama.cpp found, building and installing"
+    git reset --hard HEAD
+    git pull
     cmake . -Wno-dev \
       -DLLAMA_CUDA=off -DLLAMA_METAL=on -DLLAMA_CLBLAST=on -DLLAMA_F16C=on -DLLAMA_RPC=on -DBUILD_SHARED_LIBS=on \
       -DLLAMA_BLAS_VENDOR=Apple -DLLAMA_BUILD_EXAMPLES=on -DLLAMA_BUILD_TESTS=on -DLLAMA_BUILD_SERVER=on -DLLAMA_CCACHE=on \
@@ -124,13 +126,13 @@ function patch_ollama() {
   # git apply --check "$PATCH_DIFF" || exit 1
   # git apply "$PATCH_DIFF" || exit 1
 
-  git remote add sammcj https://github.com/sammcj/ollama.git
-  git fetch sammcj
-  git branch -a
+  # git remote add sammcj https://github.com/sammcj/ollama.git
+  # git fetch sammcj
+  # git branch -a
 
-  git checkout sammcj/main llm/server.go
-  git checkout sammcj/main llm/ext_server/server.cpp
-  git checkout sammcj/main api/types.go
+  # git checkout sammcj/main llm/server.go
+  # git checkout sammcj/main llm/ext_server/server.cpp
+  # git checkout sammcj/main api/types.go
 
   # update golang modules
   go get -u
@@ -159,10 +161,10 @@ function patch_ollama() {
   # Do not enable -DLLAMA_QKK_64=on !!
 
   # patch the ggml build as well
-  sed -i '' "s/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off '/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DGGML_USE_ACCELERATE=on '/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  sed -i '' "s/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off '/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DGGML_USE_ACCELERATE=on -DLLAMA_RPC=on '/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
 
   # shellcheck disable=SC2016
-  gsed -i 's/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off ${CMAKE_DEFS}/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=on -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_NATIVE=on -DGGML_USE_ACCELERATE=on ${CMAKE_DEFS}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  gsed -i 's/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off ${CMAKE_DEFS}/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=on -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_NATIVE=on -DGGML_USE_ACCELERATE=on -DLLAMA_RPC=on ${CMAKE_DEFS}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
 
   # llama_new_context_with_model: flash_attn = 0 should be 1
   # Force flash_attn to be on in the underlying llama.cpp build
@@ -254,6 +256,7 @@ function update_git() {
   git rebase --abort
   git submodule update --remote --rebase --recursive
   cd llm/llama.cpp || exit
+  git reset --hard HEAD
   git checkout origin/master
   cd "$OLLAMA_GIT_DIR" || exit
 
