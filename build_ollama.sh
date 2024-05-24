@@ -3,7 +3,7 @@
 # This script will build Ollama and it's macOS App from the Ollama git repo along with the latest llama.cpp.
 
 set -e # exit on error
-# set -x # debug output
+set -x # debug output
 
 OLLAMA_GIT_DIR="$HOME/git/ollama"
 PATCH_OLLAMA=${PATCH_OLLAMA:-"true"}
@@ -17,7 +17,7 @@ export OLLAMA_NUM_PARALLEL=6
 export OLLAMA_MAX_LOADED_MODELS=3
 export OLLAMA_KEEP_ALIVE='60m'
 export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
-export BUILD_LLAMA_CPP_FIRST="true"
+export BUILD_LLAMA_CPP_FIRST=${BUILD_LLAMA_CPP_FIRST:-true}
 
 # a function that takes input (error output from another command), and stores it in a variable for printing later
 function store_error() {
@@ -61,7 +61,7 @@ function patch_llama() {
 
 function build_llama_cpp() {
   # this function builds the standalone llama.cpp project - NOT the one that Ollama uses, it's just handy to have as well
-  if [ "$BUILD_LLAMA_CPP_FIRST" != "true" ]; then
+  if [ "$BUILD_LLAMA_CPP_FIRST" == true ]; then
     echo "skipping llama.cpp build"
     return
   fi
@@ -122,7 +122,7 @@ function patch_ollama() {
 
   # # apply the diff patch
   cd "$OLLAMA_GIT_DIR" || exit
-  git apply "$PATCH_DIFF" || exit 1
+  # git apply "$PATCH_DIFF" || exit 1
   # git apply --check "$PATCH_DIFF" || exit 1
   # git apply "$PATCH_DIFF" || exit 1
 
@@ -135,7 +135,7 @@ function patch_ollama() {
   # git checkout sammcj/main api/types.go
 
   # update golang modules
-  go get -u
+  # go get -u
 
   # replace FlashAttn: false, with FlashAttn: true, in api/types.go
   gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
@@ -253,17 +253,19 @@ function update_git() {
   git fetch --tags --force
   git pull
   git submodule init
+  git submodule sync
   git rebase --abort
-  git submodule update --remote --rebase --recursive
+  git submodule update --remote --rebase --recursive #TODO: Commenting out until llama.cpp's changes to sampler types have been merged into Ollama
   cd llm/llama.cpp || exit
   git reset --hard HEAD
   git checkout origin/master
+
   cd "$OLLAMA_GIT_DIR" || exit
 
   # shellcheck disable=SC2016
   # gsed -i 's/git submodule update --force ${LLAMACPP_DIR}/git submodule update --force --recursive --rebase --remote ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
   # instead completely remove the submodule update line
-  gsed -i '/git submodule update --force ${LLAMACPP_DIR}/d' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
+  gsed -i '/git submodule update --force ${LLAMACPP_DIR}/d' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh #TODO: Commenting out until llama.cpp's changes to sampler types have been merged into Ollama
 
   set +e
 }
