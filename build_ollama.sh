@@ -144,7 +144,9 @@ function patch_ollama() {
   gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
 
   # remove broken patches/05-clip-fix.diff
-  # rm -f "$OLLAMA_GIT_DIR"/llm/patches/03-load_exception.diff "$OLLAMA_GIT_DIR"/llm/patches/05-clip-fix.diff
+  # rm -f "$OLLAMA_GIT_DIR/llm/patches/05-default-pretokenizer.diff"
+  # rm -f "$OLLAMA_GIT_DIR/llm/patches/01-load-progress.diff"
+  # "$OLLAMA_GIT_DIR"/llm/patches/03-load_exception.diff "$OLLAMA_GIT_DIR"/llm/patches/05-clip-fix.diff
 
   if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
     cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak
@@ -268,7 +270,7 @@ function update_git() {
   # shellcheck disable=SC2016
   # gsed -i 's/git submodule update --force ${LLAMACPP_DIR}/git submodule update --force --recursive --rebase --remote ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
   # instead completely remove the submodule update line
-  gsed -i '/git submodule update --force ${LLAMACPP_DIR}/d' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh #TODO: Commenting out until llama.cpp's changes to sampler types have been merged into Ollama
+  # gsed -i '/git submodule update --force ${LLAMACPP_DIR}/d' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh #TODO: Commenting out until llama.cpp's changes to sampler types have been merged into Ollama
 
   set +e
 }
