@@ -5,19 +5,30 @@
 set -e # exit on error
 set -x # debug output
 
-OLLAMA_GIT_DIR="$HOME/git/ollama"
+OLLAMA_GIT_DIR="${HOME}/git/ollama"
+LLAMA_GIT_DIR="${HOME}/git/llama.cpp"
 PATCH_OLLAMA=${PATCH_OLLAMA:-"true"}
 # normalise PATCH_OLLAMA to a boolean
 PATCH_OLLAMA=$(echo "$PATCH_OLLAMA" | tr '[:upper:]' '[:lower:]')
 
+macOSSDK=$(xcrun --show-sdk-path)
+
 export OLLAMA_DEBUG=0
 export GIN_MODE=release
-export BLAS_INCLUDE_DIRS=/opt/homebrew/Cellar/clblast/1.6.2/,/opt/homebrew/Cellar/openblas/0.3.27/include,/opt/homebrew/Cellar/gsl/2.7.1/include/gsl,/opt/homebrew/Cellar/clblast/1.6.2/include
-export OLLAMA_NUM_PARALLEL=6
+export macOSSDK
+export ACCELERATE_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/Accelerate.framework"
+export FOUNDATION_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/Foundation.framework"
+export VECLIB_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/vecLib.framework"
+export CLBLAST_FRAMEWORK="/opt/homebrew/Cellar/clblast" #/1.6.3/
+export CLBlast_DIR="/opt/homebrew/lib/cmake/CLBlast"
+export BLAS_INCLUDE_DIRS="${CLBLAST_FRAMEWORK},${VECLIB_FRAMEWORK},${ACCELERATE_FRAMEWORK},${FOUNDATION_FRAMEWORK},/opt/homebrew/Cellar/openblas"
+# export BLAS_INCLUDE_DIRS=/opt/homebrew/Cellar/clblast/1.6.2/,/opt/homebrew/Cellar/openblas/0.3.27/include,/opt/homebrew/Cellar/gsl/2.7.1/include/gsl,/opt/homebrew/Cellar/clblast/1.6.2/include:/opt/homebrew/include/gsl:/opt/homebrew/Cellar/openblas/0.3.27/include:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers
+export BUILD_LLAMA_CPP_FIRST=${BUILD_LLAMA_CPP_FIRST:-true}
+
+export OLLAMA_NUM_PARALLEL=3
 export OLLAMA_MAX_LOADED_MODELS=3
 export OLLAMA_KEEP_ALIVE='3h'
 export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
-export BUILD_LLAMA_CPP_FIRST=${BUILD_LLAMA_CPP_FIRST:-true}
 
 # a function that takes input (error output from another command), and stores it in a variable for printing later
 function store_error() {
@@ -66,20 +77,7 @@ function build_llama_cpp() {
     return
   fi
 
-  local llamadir
-  local macOSSDK
-
-  macOSSDK=$(xcrun --show-sdk-path)
-  ACCELERATE_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/Accelerate.framework"
-  FOUNDATION_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/Foundation.framework"
-  VECLIB_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/vecLib.framework"
-  CLBLAST_FRAMEWORK="/opt/homebrew/Cellar/clblast/1.6.2/"
-  BLAS_INCLUDE_DIRS="${CLBLAST_FRAMEWORK},${VECLIB_FRAMEWORK}"
-  CLBlast_DIR="/opt/homebrew/lib/cmake/CLBlast"
-
-  llamadir="${HOME}/git/llama.cpp"
-
-  pushd "${llamadir}" || return
+  pushd "${LLAMA_GIT_DIR}" || return
   local gitstatus
   gitstatus=$(git pull)
   if [[ "$gitstatus" == "Already up to date." ]]; then
@@ -92,6 +90,7 @@ function build_llama_cpp() {
       -DLLAMA_CUDA=off -DLLAMA_METAL=on -DLLAMA_CLBLAST=on -DLLAMA_F16C=on -DLLAMA_RPC=on -DBUILD_SHARED_LIBS=on \
       -DLLAMA_BLAS_VENDOR=Apple -DLLAMA_BUILD_EXAMPLES=on -DLLAMA_BUILD_TESTS=on -DLLAMA_BUILD_SERVER=on -DLLAMA_CCACHE=on \
       -DLLAMA_ALL_WARNINGS=off -DLLAMA_CURL=on -DLLAMA_METAL_EMBED_LIBRARY=on -DLLAMA_NATIVE=on -DLLAMA_SERVER_VERBOSE=on \
+      -DLLAMA_OPENMP=off \
       -DLLAMA_CLBlast_DIR="${CLBlast_DIR}" -DLLAMA_ACCELERATE_FRAMEWORK="${ACCELERATE_FRAMEWORK}" -DLLAMA_FOUNDATION_FRAMEWORK="${FOUNDATION_FRAMEWORK}" &&
       make -j 12 &&
       make install
@@ -121,8 +120,7 @@ function patch_ollama() {
   echo "patching ollama with Sams tweaks"
 
   # # apply the diff patch
-  cd "$OLLAMA_GIT_DIR" || exit
-  # git apply "$PATCH_DIFF" || exit 1
+  cd "$OLLAMA_GIT_DIR/llm/llama.cpp" || exit
   # git apply --check "$PATCH_DIFF" || exit 1
   # git apply "$PATCH_DIFF" || exit 1
 
@@ -138,15 +136,16 @@ function patch_ollama() {
   # go get -u
 
   # https://github.com/ollama/ollama/pull/4619
-  gsed -i 's/n, err := io.CopyN(w, io.TeeReader(resp.Body, part), part.Size)/n, err := io.CopyN(w, io.TeeReader(resp.Body, part), part.Size-part.Completed)/g' "$OLLAMA_GIT_DIR"/server/download.go
+  # gsed -i 's/n, err := io.CopyN(w, io.TeeReader(resp.Body, part), part.Size)/n, err := io.CopyN(w, io.TeeReader(resp.Body, part), part.Size-part.Completed)/g' "$OLLAMA_GIT_DIR"/server/download.go
 
   # replace FlashAttn: false, with FlashAttn: true, in api/types.go
   gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
 
   # remove broken patches/05-clip-fix.diff
   # rm -f "$OLLAMA_GIT_DIR/llm/patches/05-default-pretokenizer.diff"
-  # rm -f "$OLLAMA_GIT_DIR/llm/patches/01-load-progress.diff"
   # "$OLLAMA_GIT_DIR"/llm/patches/03-load_exception.diff "$OLLAMA_GIT_DIR"/llm/patches/05-clip-fix.diff
+  # rm -f "$OLLAMA_GIT_DIR/llm/patches/01-load-progress.diff"        # fixed in my PATCH_DIFF file
+  # rm -f "$OLLAMA_GIT_DIR/llm/patches/05-default-pretokenizer.diff" # no longer needed
 
   if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
     cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak
@@ -161,15 +160,15 @@ function patch_ollama() {
   gsed -i 's/rm -rf ${LLAMACPP_DIR}/echo not running rm -rf ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
 
   echo "This is a gross hack as Ollama's build scripts don't seem to honour CMAKE variables properly"
-  sed -i '' "s/-DLLAMA_ACCELERATE=on/-DLLAMA_ALL_WARNINGS_3RD_PARTY=off -DLLAMA_ALL_WARNINGS=off -DLLAMA_ACCELERATE=on -DGGML_USE_ACCELERATE=1 -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on  -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_CURL=on  -Wno-dev/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  sed -i '' "s/-DLLAMA_ACCELERATE=on/-DLLAMA_ALL_WARNINGS_3RD_PARTY=off -DLLAMA_ALL_WARNINGS=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on  -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_CURL=on -DLLAMA_OPENMP=off -Wno-dev/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
   # -DLLAMA_FMA=on -DLLAMA_PERF=on # these don't seem to speed anything up
   # Do not enable -DLLAMA_QKK_64=on !!
 
   # patch the ggml build as well
-  sed -i '' "s/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off '/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DGGML_USE_ACCELERATE=on -DLLAMA_RPC=on '/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  sed -i '' "s/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off '/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_RPC=off -DLLAMA_OPENMP=off -DLLAMA_OPENMP=off '/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
 
   # shellcheck disable=SC2016
-  gsed -i 's/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off ${CMAKE_DEFS}/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=on -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_NATIVE=on -DGGML_USE_ACCELERATE=on -DLLAMA_RPC=on ${CMAKE_DEFS}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  gsed -i 's/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off ${CMAKE_DEFS}/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=on -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_NATIVE=on -DLLAMA_RPC=off -DLLAMA_OPENMP=off -DLLAMA_OPENMP=off ${CMAKE_DEFS}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
 
   # llama_new_context_with_model: flash_attn = 0 should be 1
   # Force flash_attn to be on in the underlying llama.cpp build
@@ -183,6 +182,9 @@ function patch_ollama() {
   # set ldflags to disable warnings spamming the output
   gsed -i '2i export LDFLAGS="-w"' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
   gsed -i '2i export LDFLAGS="-w"' "$OLLAMA_GIT_DIR"/scripts/build_darwin.sh
+
+  # Set the default NumBatch (n_batch / --batch-size) from the default of 'NumBatch:  512,' to 'NumBatch:  2048,' in api/types.go
+  gsed -i 's/NumBatch:  512,/NumBatch:  2048,/g' "$OLLAMA_GIT_DIR"/api/types.go
 
 }
 
@@ -260,7 +262,7 @@ function update_git() {
   git submodule init
   git submodule sync
   git rebase --abort
-  git submodule update --remote --rebase --recursive #TODO: Commenting out until llama.cpp's changes to sampler types have been merged into Ollama
+  # git submodule update --remote --rebase --recursive #TODO: Commenting out until llama.cpp's changes to sampler types have been merged into Ollama
   cd llm/llama.cpp || exit
   git reset --hard HEAD
   git checkout origin/master
@@ -270,7 +272,7 @@ function update_git() {
   # shellcheck disable=SC2016
   # gsed -i 's/git submodule update --force ${LLAMACPP_DIR}/git submodule update --force --recursive --rebase --remote ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
   # instead completely remove the submodule update line
-  # gsed -i '/git submodule update --force ${LLAMACPP_DIR}/d' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh #TODO: Commenting out until llama.cpp's changes to sampler types have been merged into Ollama
+  # gsed -i '/git submodule update --force ${LLAMACPP_DIR}/d' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
 
   set +e
 }
