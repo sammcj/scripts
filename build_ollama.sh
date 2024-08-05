@@ -5,7 +5,8 @@
 set -e # exit on error
 set -x # debug output
 
-OLLAMA_GIT_DIR="${HOME}/git/ollama"
+# OLLAMA_GIT_DIR="${HOME}/git/ollama"
+OLLAMA_GIT_DIR="${HOME}/git/ollama-fork" # temporary for Quantisation PR
 LLAMA_GIT_DIR="${HOME}/git/llama.cpp"
 PATCH_OLLAMA=${PATCH_OLLAMA:-"true"}
 # normalise PATCH_OLLAMA to a boolean
@@ -25,7 +26,7 @@ export BLAS_INCLUDE_DIRS="${CLBLAST_FRAMEWORK},${VECLIB_FRAMEWORK},${ACCELERATE_
 # export BLAS_INCLUDE_DIRS=/opt/homebrew/Cellar/clblast/1.6.2/,/opt/homebrew/Cellar/openblas/0.3.27/include,/opt/homebrew/Cellar/gsl/2.7.1/include/gsl,/opt/homebrew/Cellar/clblast/1.6.2/include:/opt/homebrew/include/gsl:/opt/homebrew/Cellar/openblas/0.3.27/include:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers
 export BUILD_LLAMA_CPP_FIRST=${BUILD_LLAMA_CPP_FIRST:-true}
 
-export OLLAMA_NUM_PARALLEL=3
+export OLLAMA_NUM_PARALLEL=2
 export OLLAMA_MAX_LOADED_MODELS=3
 export OLLAMA_KEEP_ALIVE='3h'
 export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
@@ -86,13 +87,16 @@ function build_llama_cpp() {
     echo "Updates to llama.cpp found, building and installing"
     git reset --hard HEAD
     git pull
-    cmake . -Wno-dev \
+
+    cmake -B build -Wno-dev \
       -DLLAMA_CUDA=off -DLLAMA_METAL=on -DLLAMA_CLBLAST=on -DLLAMA_F16C=on -DLLAMA_RPC=on -DBUILD_SHARED_LIBS=on \
       -DLLAMA_BLAS_VENDOR=Apple -DLLAMA_BUILD_EXAMPLES=on -DLLAMA_BUILD_TESTS=on -DLLAMA_BUILD_SERVER=on -DLLAMA_CCACHE=on \
       -DLLAMA_ALL_WARNINGS=off -DLLAMA_CURL=on -DLLAMA_METAL_EMBED_LIBRARY=on -DLLAMA_NATIVE=on -DLLAMA_SERVER_VERBOSE=on \
       -DLLAMA_OPENMP=off \
       -DLLAMA_CLBlast_DIR="${CLBlast_DIR}" -DLLAMA_ACCELERATE_FRAMEWORK="${ACCELERATE_FRAMEWORK}" -DLLAMA_FOUNDATION_FRAMEWORK="${FOUNDATION_FRAMEWORK}" &&
-      make -j 12 &&
+      cmake --build build -j 8 &&
+      cd build &&
+      make -j 8 &&
       make install
 
     echo "****************************"
@@ -165,7 +169,7 @@ function patch_ollama() {
   # Do not enable -DLLAMA_QKK_64=on !!
 
   # patch the ggml build as well
-  sed -i '' "s/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off '/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_RPC=off -DLLAMA_OPENMP=off -DLLAMA_OPENMP=off '/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  sed -i '' "s/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off '/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_RPC=off -DLLAMA_OPENMP=off '/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
 
   # shellcheck disable=SC2016
   gsed -i 's/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off ${CMAKE_DEFS}/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=on -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_NATIVE=on -DLLAMA_RPC=off -DLLAMA_OPENMP=off -DLLAMA_OPENMP=off ${CMAKE_DEFS}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
@@ -184,7 +188,7 @@ function patch_ollama() {
   gsed -i '2i export LDFLAGS="-w"' "$OLLAMA_GIT_DIR"/scripts/build_darwin.sh
 
   # Set the default NumBatch (n_batch / --batch-size) from the default of 'NumBatch:  512,' to 'NumBatch:  2048,' in api/types.go
-  gsed -i 's/NumBatch:  512,/NumBatch:  2048,/g' "$OLLAMA_GIT_DIR"/api/types.go
+  gsed -i 's/NumBatch:  512,/NumBatch:  1024,/g' "$OLLAMA_GIT_DIR"/api/types.go
 
 }
 
@@ -246,7 +250,12 @@ function update_git() {
     # one directory up from the git repo
     BASE_DIR=$(dirname "$OLLAMA_GIT_DIR")
     cd "$BASE_DIR" || exit
-    git clone https://github.com/ollama/ollama.git --depth=1
+    # git clone -j6 https://github.com/ollama/ollama.git --depth=1
+
+    # Temporary for Quantisation PR
+    git clone -j6 https://github.com/sammcj/ollama.git --depth=1
+    git checkout feature/kv-quant
+    # end temporary
   fi
 
   echo "updating ollama git repo"
@@ -265,7 +274,10 @@ function update_git() {
   # git submodule update --remote --rebase --recursive #TODO: Commenting out until llama.cpp's changes to sampler types have been merged into Ollama
   cd llm/llama.cpp || exit
   git reset --hard HEAD
-  git checkout origin/master
+  # git checkout origin/master
+  # Temporary for Quantisation PR
+  git checkout feature/kv-quant
+  # end temporary
 
   cd "$OLLAMA_GIT_DIR" || exit
 
