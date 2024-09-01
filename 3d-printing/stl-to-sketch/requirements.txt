@@ -1,0 +1,6 @@
+numpy
+stl
+
+numpy-stl
+opencv-python
+matplotlib
