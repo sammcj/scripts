@@ -25,11 +25,12 @@ export CLBlast_DIR="/opt/homebrew/lib/cmake/CLBlast"
 export BLAS_INCLUDE_DIRS="${CLBLAST_FRAMEWORK},${VECLIB_FRAMEWORK},${ACCELERATE_FRAMEWORK},${FOUNDATION_FRAMEWORK},/opt/homebrew/Cellar/openblas"
 # export BLAS_INCLUDE_DIRS=/opt/homebrew/Cellar/clblast/1.6.2/,/opt/homebrew/Cellar/openblas/0.3.27/include,/opt/homebrew/Cellar/gsl/2.7.1/include/gsl,/opt/homebrew/Cellar/clblast/1.6.2/include:/opt/homebrew/include/gsl:/opt/homebrew/Cellar/openblas/0.3.27/include:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers
 export BUILD_LLAMA_CPP_FIRST=${BUILD_LLAMA_CPP_FIRST:-true}
-
-export OLLAMA_NUM_PARALLEL=2
+# export OLLAMA_NUM_PARALLEL=2
 export OLLAMA_MAX_LOADED_MODELS=3
-export OLLAMA_KEEP_ALIVE='3h'
+export OLLAMA_KEEP_ALIVE='6h'
 export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
+export OLLAMA_CACHE_TYPE_K=q8_0
+export OLLAMA_CACHE_TYPE_V=q8_0
 
 # a function that takes input (error output from another command), and stores it in a variable for printing later
 function store_error() {
@@ -89,7 +90,7 @@ function build_llama_cpp() {
     git pull
 
     cmake -B build -Wno-dev \
-      -DLLAMA_CUDA=off -DLLAMA_METAL=on -DLLAMA_CLBLAST=on -DLLAMA_F16C=on -DLLAMA_RPC=on -DBUILD_SHARED_LIBS=on \
+      -DLLAMA_CUDA=off -DLLAMA_METAL=on -DLLAMA_ACCELERATE=on -DLLAMA_CLBLAST=on -DLLAMA_F16C=on -DLLAMA_RPC=on -DBUILD_SHARED_LIBS=on -DGGML_SCHED_MAX_COPIES=6 \
       -DLLAMA_BLAS_VENDOR=Apple -DLLAMA_BUILD_EXAMPLES=on -DLLAMA_BUILD_TESTS=on -DLLAMA_BUILD_SERVER=on -DLLAMA_CCACHE=on \
       -DLLAMA_ALL_WARNINGS=off -DLLAMA_CURL=on -DLLAMA_METAL_EMBED_LIBRARY=on -DLLAMA_NATIVE=on -DLLAMA_SERVER_VERBOSE=on \
       -DLLAMA_OPENMP=off \
@@ -138,9 +139,6 @@ function patch_ollama() {
 
   # update golang modules
   # go get -u
-
-  # https://github.com/ollama/ollama/pull/4619
-  # gsed -i 's/n, err := io.CopyN(w, io.TeeReader(resp.Body, part), part.Size)/n, err := io.CopyN(w, io.TeeReader(resp.Body, part), part.Size-part.Completed)/g' "$OLLAMA_GIT_DIR"/server/download.go
 
   # replace FlashAttn: false, with FlashAttn: true, in api/types.go
   gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
@@ -310,9 +308,19 @@ function run_app() {
     launchctl setenv OLLAMA_ORIGINS "$OLLAMA_ORIGINS"
   fi
 
-  if [ -z "$(launchctl getenv OLLAMA_NUM_PARALLEL)" ]; then
-    echo "setting OLLAMA_NUM_PARALLEL"
-    launchctl setenv OLLAMA_NUM_PARALLEL "$OLLAMA_NUM_PARALLEL"
+  # if [ -z "$(launchctl getenv OLLAMA_NUM_PARALLEL)" ]; then
+  #   echo "setting OLLAMA_NUM_PARALLEL"
+  #   launchctl setenv OLLAMA_NUM_PARALLEL "$OLLAMA_NUM_PARALLEL"
+  # fi
+
+  if [ -z "$(launchctl getenv OLLAMA_CACHE_TYPE_K)" ]; then
+    echo "setting OLLAMA_CACHE_TYPE_K"
+    launchctl setenv OLLAMA_CACHE_TYPE_K "$OLLAMA_CACHE_TYPE_K"
+  fi
+
+  if [ -z "$(launchctl getenv OLLAMA_CACHE_TYPE_V)" ]; then
+    echo "setting OLLAMA_CACHE_TYPE_V"
+    launchctl setenv OLLAMA_CACHE_TYPE_V "$OLLAMA_CACHE_TYPE_V"
   fi
 
   if [ -z "$(launchctl getenv OLLAMA_MAX_LOADED_MODELS)" ]; then
