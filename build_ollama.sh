@@ -6,11 +6,12 @@ set -e # exit on error
 set -x # debug output
 
 # OLLAMA_GIT_DIR="${HOME}/git/ollama"
-OLLAMA_GIT_DIR="${HOME}/git/ollama-fork" # temporary for Quantisation PR
+OLLAMA_GIT_DIR="${HOME}/git/ollama-fork"
 LLAMA_GIT_DIR="${HOME}/git/llama.cpp"
 PATCH_OLLAMA=${PATCH_OLLAMA:-"true"}
 # normalise PATCH_OLLAMA to a boolean
 PATCH_OLLAMA=$(echo "$PATCH_OLLAMA" | tr '[:upper:]' '[:lower:]')
+BUILD_NEW_RUNNERS=${BUILD_NEW_RUNNERS:-"false"}
 
 macOSSDK=$(xcrun --show-sdk-path)
 
@@ -20,24 +21,28 @@ export macOSSDK
 export ACCELERATE_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/Accelerate.framework"
 export FOUNDATION_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/Foundation.framework"
 export VECLIB_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/vecLib.framework"
-export CLBLAST_FRAMEWORK="/opt/homebrew/Cellar/clblast" #/1.6.3/
+export CLBLAST_FRAMEWORK="/opt/homebrew/Cellar/clblast"
 export CLBlast_DIR="/opt/homebrew/lib/cmake/CLBlast"
 export BLAS_INCLUDE_DIRS="${CLBLAST_FRAMEWORK},${VECLIB_FRAMEWORK},${ACCELERATE_FRAMEWORK},${FOUNDATION_FRAMEWORK},/opt/homebrew/Cellar/openblas"
-# export BLAS_INCLUDE_DIRS=/opt/homebrew/Cellar/clblast/1.6.2/,/opt/homebrew/Cellar/openblas/0.3.27/include,/opt/homebrew/Cellar/gsl/2.7.1/include/gsl,/opt/homebrew/Cellar/clblast/1.6.2/include:/opt/homebrew/include/gsl:/opt/homebrew/Cellar/openblas/0.3.27/include:/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers
 export BUILD_LLAMA_CPP_FIRST=${BUILD_LLAMA_CPP_FIRST:-true}
-# export OLLAMA_NUM_PARALLEL=2
 export OLLAMA_MAX_LOADED_MODELS=3
-export OLLAMA_KEEP_ALIVE='6h'
+export OLLAMA_KEEP_ALIVE='8h'
 export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
 export OLLAMA_CACHE_TYPE_K=q8_0
 export OLLAMA_CACHE_TYPE_V=q8_0
+export OLLAMA_FLASH_ATTENTION=1
+export CGO_LDFLAGS="-Wl,-no_warn_duplicate_libraries"
+
+if [ "$BUILD_NEW_RUNNERS" == "true" ]; then
+  export OLLAMA_NEW_RUNNERS=1
+fi
 
 # a function that takes input (error output from another command), and stores it in a variable for printing later
 function store_error() {
   errors+=("""  - Stored error from line $LINENO: $1""")
 }
 
-trap 'store_error "Error on line $LINENO"' ERR
+trap 'store_error "Error on line $LINENO, last command: $BASH_COMMAND"' ERR
 
 # absolute path to ./ollama/ollama_patches.diff
 PATCH_DIFF="${HOME}/git/sammcj/scripts/ollama/ollama_patches.diff"
@@ -163,8 +168,6 @@ function patch_ollama() {
 
   echo "This is a gross hack as Ollama's build scripts don't seem to honour CMAKE variables properly"
   sed -i '' "s/-DLLAMA_ACCELERATE=on/-DLLAMA_ALL_WARNINGS_3RD_PARTY=off -DLLAMA_ALL_WARNINGS=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on  -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_CURL=on -DLLAMA_OPENMP=off -Wno-dev/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
-  # -DLLAMA_FMA=on -DLLAMA_PERF=on # these don't seem to speed anything up
-  # Do not enable -DLLAMA_QKK_64=on !!
 
   # patch the ggml build as well
   sed -i '' "s/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off '/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_RPC=off -DLLAMA_OPENMP=off '/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
@@ -172,9 +175,6 @@ function patch_ollama() {
   # shellcheck disable=SC2016
   gsed -i 's/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off ${CMAKE_DEFS}/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=on -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_NATIVE=on -DLLAMA_RPC=off -DLLAMA_OPENMP=off -DLLAMA_OPENMP=off ${CMAKE_DEFS}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
 
-  # llama_new_context_with_model: flash_attn = 0 should be 1
-  # Force flash_attn to be on in the underlying llama.cpp build
-  # replace cparams.flash_attn       = params.flash_attn; with cparams.flash_attn       = 1; in llm/llama.cpp/llama.cpp
   gsed -i 's/cparams.flash_attn       = params.flash_attn;/cparams.flash_attn       = 1;/g' "$OLLAMA_GIT_DIR"/llm/llama.cpp/llama.cpp
 
   # add export BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS to the second line of the gen_darwin.sh and scripts/build_darwin.sh files
@@ -196,8 +196,10 @@ function build_cli() {
 
   mkdir -p dist
   VERSION=$VERSION BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS go generate ./... || exit 1
+  if [ "$OLLAMA_NEW_RUNNERS" == "1" ]; then
+    make -C llama -j 8 || exit 1
+  fi
   VERSION=$VERSION BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS go build -o dist/ollama . || exit 1
-  # go run build.go -f
 }
 
 function build_app() {
@@ -251,9 +253,12 @@ function update_git() {
     # git clone -j6 https://github.com/ollama/ollama.git --depth=1
 
     # Temporary for Quantisation PR
-    git clone -j6 https://github.com/sammcj/ollama.git --depth=1
     git checkout feature/kv-quant
-    # end temporary
+    if [ "$BUILD_NEW_RUNNERS" == "true" ]; then
+      git checkout feature/kv-quant-newrunners
+    else
+      git clone -j6 https://github.com/sammcj/ollama.git --depth=1
+    fi
   fi
 
   echo "updating ollama git repo"
@@ -263,26 +268,21 @@ function update_git() {
 
   set -e
 
-  # force pull any tags
   git fetch --tags --force
   git pull
   git submodule init
   git submodule sync
   git rebase --abort
-  # git submodule update --remote --rebase --recursive #TODO: Commenting out until llama.cpp's changes to sampler types have been merged into Ollama
   cd llm/llama.cpp || exit
   git reset --hard HEAD
-  # git checkout origin/master
+
   # Temporary for Quantisation PR
-  git checkout feature/kv-quant
-  # end temporary
-
+  if [ "$BUILD_NEW_RUNNERS" == "true" ]; then
+    git checkout feature/kv-quant-newrunners
+  else
+    git checkout feature/kv-quant
+  fi
   cd "$OLLAMA_GIT_DIR" || exit
-
-  # shellcheck disable=SC2016
-  # gsed -i 's/git submodule update --force ${LLAMACPP_DIR}/git submodule update --force --recursive --rebase --remote ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
-  # instead completely remove the submodule update line
-  # gsed -i '/git submodule update --force ${LLAMACPP_DIR}/d' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
 
   set +e
 }
@@ -294,10 +294,10 @@ function set_version() {
   echo "Ollama version (from git tag): $VERSION"
 
   # replace the version in the app's version/version.go (defaults to var Version string = "0.0.0")
-  sed -i '' "s/var Version string = \"0.0.0\"/var Version string = \"$VERSION\"/g" "$OLLAMA_GIT_DIR"/version/version.go
+  # sed -i '' "s/var Version string = \"0.0.0\"/var Version string = \"$VERSION\"/g" "$OLLAMA_GIT_DIR"/version/version.go
 
   # replace the version in the app's package.json
-  sed -i '' "s/\"version\": \"0.0.0\"/\"version\": \"$VERSION\"/g" "$OLLAMA_GIT_DIR"/macapp/package.json
+  # sed -i '' "s/\"version\": \"0.0.0\"/\"version\": \"$VERSION\"/g" "$OLLAMA_GIT_DIR"/macapp/package.json
 }
 
 function run_app() {
@@ -342,11 +342,14 @@ function run_app() {
   # ./dist/ollama serve
 }
 
+# cleanup first
+rm -rf /Users/samm/git/ollama-fork/.git/modules/llama.cpp/rebase-apply || true
+
 build_llama_cpp || store_error "Failed to build llama.cpp standalone"
 update_git || store_error "Failed to update git"
 set_version || store_error "Failed to set version"
 patch_ollama || store_error "Failed to patch ollama"
-patch_llama || store_error "Failed to patch llama"
+# patch_llama || store_error "Failed to patch llama"
 build_cli || store_error "Failed to build ollama cli"
 build_app || store_error "Failed to build ollama app"
 # update_fw_rules || store_error "Failed to update firewall rules"
