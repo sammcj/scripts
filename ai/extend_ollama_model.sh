@@ -5,7 +5,7 @@
 
 set -eo pipefail
 
-# If set to "true", the script will create additional models with context sizes 16384 and 65536
+# If set to "true", the script will create additional models with context sizes 8192, 16384 and 65536
 CREATE_ADDITIONAL_CTX_MODELS=${CREATE_ADDITIONAL_CTX_MODELS:-"false"}
 
 # Default context size
@@ -51,7 +51,7 @@ extend_single_model() {
   base_name=$(echo "$model_name" | cut -d':' -f1)
   variant=$(echo "$model_name" | cut -d':' -f2)
 
-  if echo "$variant" | grep -q "${ctx_size}" || echo "base_name" | grep -q "${ctx_size}"; then
+  if echo "$variant" | grep -q "${ctx_size}" || echo "base_name" | grep -q "${ctx_size}" || echo "$model_name" | grep -q "${ctx_size}"; then
     echo "Model $model_name already has context size $ctx_size"
     return 0
   fi
@@ -65,8 +65,11 @@ extend_single_model() {
     num_batch=512
   fi
 
+  # Create a safe filename by replacing / with _
+  local safe_filename="Modelfile-${model_name//\//_}"
+
   # Create Modelfile inside the container
-  docker exec ollama bash -c "cat > Modelfile-${model_name} << EOF
+  docker exec ollama bash -c "cat > \"$safe_filename\" << EOF
 FROM $model_name
 
 PARAMETER num_ctx $ctx_size
@@ -76,8 +79,8 @@ PARAMETER num_batch $num_batch
 EOF"
 
   # Create extended model inside the container
-  docker exec ollama ollama create "${base_name}-${ctx_size}:${variant}" -f "Modelfile-${model_name}"
-  docker exec ollama rm "Modelfile-${model_name}"
+  docker exec ollama ollama create "${base_name}-${ctx_size}:${variant}" -f "$safe_filename"
+  docker exec ollama rm "$safe_filename"
   echo "Created extended model: ${base_name}-${ctx_size}:${variant}"
 }
 
@@ -99,7 +102,8 @@ docker exec ollama ollama list | tail -n +2 | while read -r line; do
 done
 
 if [ "$CREATE_ADDITIONAL_CTX_MODELS" = "true" ]; then
-  echo "Creating additional models with context sizes 16384 and 65536"
+  echo "Creating additional models with context sizes 8192, 16384 and 65536"
+  DEFAULT_CTX_SIZE=8192 "$0"
   DEFAULT_CTX_SIZE=16384 "$0"
   DEFAULT_CTX_SIZE=65536 "$0"
 fi
