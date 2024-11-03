@@ -25,15 +25,15 @@ export CLBLAST_FRAMEWORK="/opt/homebrew/Cellar/clblast"
 export CLBlast_DIR="/opt/homebrew/lib/cmake/CLBlast"
 export BLAS_INCLUDE_DIRS="${CLBLAST_FRAMEWORK},${VECLIB_FRAMEWORK},${ACCELERATE_FRAMEWORK},${FOUNDATION_FRAMEWORK},/opt/homebrew/Cellar/openblas"
 export BUILD_LLAMA_CPP_FIRST=${BUILD_LLAMA_CPP_FIRST:-true}
-export OLLAMA_MAX_LOADED_MODELS=3
-export OLLAMA_KEEP_ALIVE='8h'
+export OLLAMA_MAX_LOADED_MODELS=4
+export OLLAMA_KEEP_ALIVE='10h'
 export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
 export OLLAMA_CACHE_TYPE_K=q8_0
 export OLLAMA_CACHE_TYPE_V=q8_0
 export OLLAMA_FLASH_ATTENTION=1
 export CGO_LDFLAGS="-Wl,-no_warn_duplicate_libraries"
 
-if [ "$BUILD_NEW_RUNNERS" == "true" ]; then
+if [ "$BUILD_NEW_RUNNERS" == "true" ] || [ "$BUILD_NEW_RUNNERS" == "1" ]; then
   export OLLAMA_NEW_RUNNERS=1
 fi
 
@@ -45,37 +45,37 @@ function store_error() {
 trap 'store_error "Error on line $LINENO, last command: $BASH_COMMAND"' ERR
 
 # absolute path to ./ollama/ollama_patches.diff
-PATCH_DIFF="${HOME}/git/sammcj/scripts/ollama/ollama_patches.diff"
+# PATCH_DIFF="${HOME}/git/sammcj/scripts/ollama/ollama_patches.diff"
 
-function patch_llama() {
-  # custom patches for llama.cpp
-  # Take a PR to llama.cpp, e.g. https://github.com/ggerganov/llama.cpp/pull/6707/files, get the fork and branch being requested to merge and apply it to the local llama.cpp (llm/llama.cpp)
-  PRs=(
-    # "https://github.com/ggerganov/llama.cpp/pull/7154"
-    # "https://github.com/ggerganov/llama.cpp/pull/7305" # add server support for the RPC server
-  )
+# function patch_llama() {
+#   # custom patches for llama.cpp
+#   # Take a PR to llama.cpp, e.g. https://github.com/ggerganov/llama.cpp/pull/6707/files, get the fork and branch being requested to merge and apply it to the local llama.cpp (llm/llama.cpp)
+#   PRs=(
+#     # "https://github.com/ggerganov/llama.cpp/pull/7154"
+#     # "https://github.com/ggerganov/llama.cpp/pull/7305" # add server support for the RPC server
+#   )
 
-  cd "$OLLAMA_GIT_DIR/llm/llama.cpp" || exit
+#   cd "$OLLAMA_GIT_DIR/llm/llama.cpp" || exit
 
-  for PR in "${PRs[@]}"; do
-    tput setaf 7
-    echo "------------------------------"
-    echo "Applying patch from $PR:"
-    echo "------------------------------"
-    tput sgr0
-    curl -sSL "$PR.diff" | git apply --check --
-    # if doesn't apply cleanly, pause and let the user decide to continue or not
-    if [ $? -ne 0 ]; then
-      read -p "Patch from $PR failed to apply cleanly, continue? [y/N] " -n 1 -r
+#   for PR in "${PRs[@]}"; do
+#     tput setaf 7
+#     echo "------------------------------"
+#     echo "Applying patch from $PR:"
+#     echo "------------------------------"
+#     tput sgr0
+#     curl -sSL "$PR.diff" | git apply --check --
+#     # if doesn't apply cleanly, pause and let the user decide to continue or not
+#     if [ $? -ne 0 ]; then
+#       read -p "Patch from $PR failed to apply cleanly, continue? [y/N] " -n 1 -r
 
-      echo
-      if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        store_error "Patch from $PR failed to apply cleanly, skipping..."
-        continue
-      fi
-    fi
-  done
-}
+#       echo
+#       if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+#         store_error "Patch from $PR failed to apply cleanly, skipping..."
+#         continue
+#       fi
+#     fi
+#   done
+# }
 
 function build_llama_cpp() {
   # this function builds the standalone llama.cpp project - NOT the one that Ollama uses, it's just handy to have as well
@@ -130,20 +130,7 @@ function patch_ollama() {
   echo "patching ollama with Sams tweaks"
 
   # # apply the diff patch
-  cd "$OLLAMA_GIT_DIR/llm/llama.cpp" || exit
-  # git apply --check "$PATCH_DIFF" || exit 1
-  # git apply "$PATCH_DIFF" || exit 1
-
-  # git remote add sammcj https://github.com/sammcj/ollama.git
-  # git fetch sammcj
-  # git branch -a
-
-  # git checkout sammcj/main llm/server.go
-  # git checkout sammcj/main llm/ext_server/server.cpp
-  # git checkout sammcj/main api/types.go
-
-  # update golang modules
-  # go get -u
+  # cd "$OLLAMA_GIT_DIR/llm/llama.cpp" || exit # DISABLED FOR NEW RUNNERS
 
   # replace FlashAttn: false, with FlashAttn: true, in api/types.go
   gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
@@ -154,9 +141,9 @@ function patch_ollama() {
   # rm -f "$OLLAMA_GIT_DIR/llm/patches/01-load-progress.diff"        # fixed in my PATCH_DIFF file
   # rm -f "$OLLAMA_GIT_DIR/llm/patches/05-default-pretokenizer.diff" # no longer needed
 
-  if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
-    cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak
-  fi
+  # if [ ! -f "$OLLAMA_GIT_DIR/llm/generate/gen_darwin.sh" ]; then
+  #   cp "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh.bak
+  # fi
 
   if [ ! -f "$OLLAMA_GIT_DIR/scripts/build_darwin.sh" ]; then
     cp "$OLLAMA_GIT_DIR"/scripts/build_darwin.sh "$OLLAMA_GIT_DIR"/scripts/build_darwin.sh.bak
@@ -164,25 +151,25 @@ function patch_ollama() {
 
   # comment out rm -rf ${LLAMACPP_DIR} in gen_common.sh
   # shellcheck disable=SC2016
-  gsed -i 's/rm -rf ${LLAMACPP_DIR}/echo not running rm -rf ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
+  # gsed -i 's/rm -rf ${LLAMACPP_DIR}/echo not running rm -rf ${LLAMACPP_DIR}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_common.sh
 
-  echo "This is a gross hack as Ollama's build scripts don't seem to honour CMAKE variables properly"
-  sed -i '' "s/-DLLAMA_ACCELERATE=on/-DLLAMA_ALL_WARNINGS_3RD_PARTY=off -DLLAMA_ALL_WARNINGS=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on  -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_CURL=on -DLLAMA_OPENMP=off -Wno-dev/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  # echo "This is a gross hack as Ollama's build scripts don't seem to honour CMAKE variables properly"
+  # sed -i '' "s/-DLLAMA_ACCELERATE=on/-DLLAMA_ALL_WARNINGS_3RD_PARTY=off -DLLAMA_ALL_WARNINGS=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on  -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_CURL=on -DLLAMA_OPENMP=off -Wno-dev/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
 
   # patch the ggml build as well
-  sed -i '' "s/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off '/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_RPC=off -DLLAMA_OPENMP=off '/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  # sed -i '' "s/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off '/CMAKE_DEFS='-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCMAKE_OSX_ARCHITECTURES=arm64 -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off -DLLAMA_ACCELERATE=on -DLLAMA_SCHED_MAX_COPIES=6 -DLLAMA_METAL_MACOSX_VERSION_MIN=14.2 -DLLAMA_NATIVE=on -DLLAMA_F16C=on -DLLAMA_FP16_VA=on -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_RPC=off -DLLAMA_OPENMP=off '/g" "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
 
   # shellcheck disable=SC2016
-  gsed -i 's/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off ${CMAKE_DEFS}/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=on -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_NATIVE=on -DLLAMA_RPC=off -DLLAMA_OPENMP=off -DLLAMA_OPENMP=off ${CMAKE_DEFS}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  # gsed -i 's/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=off -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off ${CMAKE_DEFS}/-DCMAKE_OSX_DEPLOYMENT_TARGET=11.3 -DCMAKE_SYSTEM_NAME=Darwin -DBUILD_SHARED_LIBS=off -DCMAKE_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DLLAMA_METAL=on -DLLAMA_ACCELERATE=off -DLLAMA_AVX=off -DLLAMA_AVX2=off -DLLAMA_AVX512=off -DLLAMA_FMA=off -DLLAMA_F16C=off -DLLAMA_NEON=on -DLLAMA_ARM_FMA=on -DLLAMA_NATIVE=on -DLLAMA_RPC=off -DLLAMA_OPENMP=off -DLLAMA_OPENMP=off ${CMAKE_DEFS}/g' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
 
-  gsed -i 's/cparams.flash_attn       = params.flash_attn;/cparams.flash_attn       = 1;/g' "$OLLAMA_GIT_DIR"/llm/llama.cpp/llama.cpp
+  # gsed -i 's/cparams.flash_attn       = params.flash_attn;/cparams.flash_attn       = 1;/g' "$OLLAMA_GIT_DIR"/llm/llama.cpp/llama.cpp
 
   # add export BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS to the second line of the gen_darwin.sh and scripts/build_darwin.sh files
-  gsed -i '2i export BLAS_INCLUDE_DIRS='"$BLAS_INCLUDE_DIRS"'' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  # gsed -i '2i export BLAS_INCLUDE_DIRS='"$BLAS_INCLUDE_DIRS"'' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
   gsed -i '2i export BLAS_INCLUDE_DIRS='"$BLAS_INCLUDE_DIRS"'' "$OLLAMA_GIT_DIR"/scripts/build_darwin.sh
 
   # set ldflags to disable warnings spamming the output
-  gsed -i '2i export LDFLAGS="-w"' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
+  # gsed -i '2i export LDFLAGS="-w"' "$OLLAMA_GIT_DIR"/llm/generate/gen_darwin.sh
   gsed -i '2i export LDFLAGS="-w"' "$OLLAMA_GIT_DIR"/scripts/build_darwin.sh
 
   # Set the default NumBatch (n_batch / --batch-size) from the default of 'NumBatch:  512,' to 'NumBatch:  2048,' in api/types.go
@@ -254,7 +241,7 @@ function update_git() {
 
     # Temporary for Quantisation PR
     git checkout feature/kv-quant
-    if [ "$BUILD_NEW_RUNNERS" == "true" ]; then
+    if [ "$BUILD_NEW_RUNNERS" == "true" ] || [ "$BUILD_NEW_RUNNERS" == "1" ]; then
       git checkout feature/kv-quant-newrunners
     else
       git clone -j6 https://github.com/sammcj/ollama.git --depth=1
@@ -270,11 +257,11 @@ function update_git() {
 
   git fetch --tags --force
   git pull
-  git submodule init
-  git submodule sync
+  # git submodule init # DISABLED FOR NEW RUNNERS
+  # git submodule sync # DISABLED FOR NEW RUNNERS
   git rebase --abort
-  cd llm/llama.cpp || exit
-  git reset --hard HEAD
+  # cd llm/llama.cpp || exit # DISABLED FOR NEW RUNNERS
+  # git reset --hard HEAD # DISABLED FOR NEW RUNNERS
 
   # Temporary for Quantisation PR
   if [ "$BUILD_NEW_RUNNERS" == "true" ]; then

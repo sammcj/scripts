@@ -5,6 +5,9 @@
 
 set -eo pipefail
 
+# If set to "true", the script will create additional models with context sizes 16384 and 65536
+CREATE_ADDITIONAL_CTX_MODELS=${CREATE_ADDITIONAL_CTX_MODELS:-"false"}
+
 # Default context size
 DEFAULT_CTX_SIZE=32768
 TEMPERATURE=0.1
@@ -41,22 +44,22 @@ fi
 
 # Function to extend a single model
 extend_single_model() {
-  local model_name=$1
-  local ctx_size=$2
-  local base_name variant
+  local model_name=$1     # e.g. qwen2.5:32b-instruct-q6_K
+  local ctx_size=$2       # e.g. 32768
+  local base_name variant # e.g. qwen2.5, 32b-instruct-q6_K
 
   base_name=$(echo "$model_name" | cut -d':' -f1)
   variant=$(echo "$model_name" | cut -d':' -f2)
 
-  if echo "$variant" | grep -q "num_ctx=${ctx_size}"; then
-    echo "Model ${base_name}-${ctx_size}:${variant} already exists"
+  if echo "$variant" | grep -q "${ctx_size}" || echo "base_name" | grep -q "${ctx_size}"; then
+    echo "Model $model_name already has context size $ctx_size"
     return 0
   fi
 
   echo "Extending model: $model_name with context size: $ctx_size"
 
-  # If the model is 7b or 8b in the name, set $num_batch to 1024, otherwise leave it at the default 512
-  if echo "$model_name" | grep -q "7b\|8b"; then
+  # If the model is 3-8b in the name, set $num_batch to 1024
+  if echo "$model_name" | grep -q "3b\|4b\|7b\|8b"; then
     num_batch=1024
   else
     num_batch=512
@@ -94,3 +97,9 @@ docker exec ollama ollama list | tail -n +2 | while read -r line; do
   model_name=$(echo "$line" | awk '{print $1}')
   extend_single_model "$model_name" "$ctx_size"
 done
+
+if [ "$CREATE_ADDITIONAL_CTX_MODELS" = "true" ]; then
+  echo "Creating additional models with context sizes 16384 and 65536"
+  DEFAULT_CTX_SIZE=16384 "$0"
+  DEFAULT_CTX_SIZE=65536 "$0"
+fi
