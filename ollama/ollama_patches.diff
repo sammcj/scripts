@@ -1,64 +1,21 @@
-diff --git a/common/common.cpp b/common/common.cpp
-index cdcb352b..0f091a78 100644
---- a/common/common.cpp
-+++ b/common/common.cpp
-@@ -2373,6 +2373,8 @@ struct llama_model_params llama_model_params_from_gpt_params(const gpt_params &
-     mparams.use_mmap        = params.use_mmap;
-     mparams.use_mlock       = params.use_mlock;
-     mparams.check_tensors   = params.check_tensors;
-+    mparams.progress_callback = params.progress_callback;
-+    mparams.progress_callback_user_data = params.progress_callback_user_data;
-     if (params.kv_overrides.empty()) {
-         mparams.kv_overrides = NULL;
-     } else {
-diff --git a/common/common.h b/common/common.h
-index 35f5311e..58849023 100644
---- a/common/common.h
-+++ b/common/common.h
-@@ -180,6 +180,13 @@ struct gpt_params {
-     std::string mmproj = "";        // path to multimodal projector
-     std::vector<std::string> image; // path to image file(s)
+diff --git a/llm/memory.go b/llm/memory.go
+--- a/llm/memory.go
++++ b/llm/memory.go
+@@ -1,4 +1,18 @@
+ 	layerSize += kv / ggml.KV().BlockCount()
 
-+    // Called with a progress value between 0.0 and 1.0. Pass NULL to disable.
-+    // If the provided progress_callback returns true, model loading continues.
-+    // If it returns false, model loading is immediately aborted.
-+    llama_progress_callback progress_callback = NULL;
-+    // context pointer passed to the progress callback
-+    void * progress_callback_user_data;
++	// CHANGEME: Testing out fixes to the memory estimations
++	if fa {
++		// I don't quite know what 0.05 is the magic number, but it corrects the memory estimates
++		const faCorrectionFactor = 0.05
++		graphPartialOffload = uint64(float64(graphPartialOffload) * faCorrectionFactor)
++		graphFullOffload = uint64(float64(graphFullOffload) * faCorrectionFactor)
++		layerSize = uint64(float64(layerSize) * faCorrectionFactor)
++		slog.Debug("flash attention memory correction", "factor", faCorrectionFactor)
++		slog.Debug("flash attention memory correction", "graph_partial_offload", format.HumanBytes2(graphPartialOffload))
++		slog.Debug("flash attention memory correction", "graph_full_offload", format.HumanBytes2(graphFullOffload))
++		slog.Debug("flash attention memory correction", "layer_size", format.HumanBytes2(layerSize))
++		slog.Debug("flash attention memory correction", "kv", format.HumanBytes2(kv))
++	}
 +
-     // server params
-     int32_t port           = 8080;         // server listens on this network port
-     int32_t timeout_read   = 600;          // http read timeout in seconds
-
-diff --git a/llama.cpp b/llama.cpp
-index 32264a00..3f1fb0d0 100644
---- a/llama.cpp
-+++ b/llama.cpp
-@@ -4645,16 +4645,7 @@ static void llm_load_vocab(
-
-         // for now, only BPE models have pre-tokenizers
-         if (vocab.type == LLAMA_VOCAB_TYPE_BPE) {
--            if (tokenizer_pre.empty()) {
--                LLAMA_LOG_WARN("%s: missing pre-tokenizer type, using: 'default'\n", __func__);
--                LLAMA_LOG_WARN("%s:                                             \n", __func__);
--                LLAMA_LOG_WARN("%s: ************************************        \n", __func__);
--                LLAMA_LOG_WARN("%s: GENERATION QUALITY WILL BE DEGRADED!        \n", __func__);
--                LLAMA_LOG_WARN("%s: CONSIDER REGENERATING THE MODEL             \n", __func__);
--                LLAMA_LOG_WARN("%s: ************************************        \n", __func__);
--                LLAMA_LOG_WARN("%s:                                             \n", __func__);
--                vocab.type_pre = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
--            } else if (tokenizer_pre == "default") {
-+            if (tokenizer_pre == "default") {
-                 vocab.type_pre = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
-             } else if (
-                     tokenizer_pre == "llama3"   ||
-@@ -4706,7 +4697,8 @@ static void llm_load_vocab(
-                 tokenizer_pre == "smaug-bpe") {
-                 vocab.type_pre = LLAMA_VOCAB_PRE_TYPE_SMAUG;
-             } else {
--                throw std::runtime_error(format("unknown pre-tokenizer type: '%s'", tokenizer_pre.c_str()));
-+                LLAMA_LOG_WARN("%s: missing or unrecognized pre-tokenizer type, using: 'default'\n", __func__);
-+                vocab.type_pre = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
-             }
-         } else {
-             vocab.type_pre = LLAMA_VOCAB_PRE_TYPE_DEFAULT;
+ 	if graphPartialOffload == 0 {

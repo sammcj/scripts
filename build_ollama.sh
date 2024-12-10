@@ -58,6 +58,9 @@ function patch_ollama() {
 
   echo "patching ollama with Sams defaults"
 
+  # apply patches
+  patch -p1 <~/git/sammcj/scripts/ollama/ollama_patches.diff || exit 1
+
   gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
   gsed -i 's/NumBatch:  512,/NumBatch:  '"$DEFAULT_BATCH_SIZE"',/g' "$OLLAMA_GIT_DIR"/api/types.go
   gsed -i 's/Temperature:      0.8,/Temperature:      0.4,/g' "$OLLAMA_GIT_DIR"/api/types.go
