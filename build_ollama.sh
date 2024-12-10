@@ -8,7 +8,14 @@ set -x # debug output
 macOSSDK=$(xcrun --show-sdk-path)
 export macOSSDK
 
+# OLLAMA_GIT_REPO="${OLLAMA_GIT_REPO:-https://github.com/ollama/ollama.git}"
+# OLLAMA_GIT_DIR="${OLLAMA_GIT_DIR:-$HOME/git/ollama}"
+# OLLAMA_GIT_BRANCH="${OLLAMA_GIT_BRANCH:-main}"
+
+OLLAMA_GIT_REPO="${OLLAMA_GIT_REPO:-https://github.com/sammcj/ollama.git}"
 OLLAMA_GIT_DIR="${OLLAMA_GIT_DIR:-$HOME/git/ollama-fork}"
+OLLAMA_GIT_BRANCH="${OLLAMA_GIT_BRANCH:-fix/memory_estimates}"
+
 PATCH_OLLAMA=${PATCH_OLLAMA:-"true"}
 PATCH_OLLAMA=$(echo "$PATCH_OLLAMA" | tr '[:upper:]' '[:lower:]')
 DEFAULT_BATCH_SIZE=${DEFAULT_BATCH_SIZE:-512}
@@ -28,6 +35,7 @@ export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*
 export OLLAMA_KV_CACHE_TYPE=q8_0
 export OLLAMA_FLASH_ATTENTION=1
 export CGO_LDFLAGS="-Wl,-no_warn_duplicate_libraries"
+export OLLAMA_CUSTOM_CPU_DEFS="-DGGML_NATIVE=on -DGGML_F16C=on -DGGML_FMA=on -DGGML_SCHED_MAX_COPIES=6"
 
 # a function that takes input (error output from another command), and stores it in a variable for printing later
 function store_error() {
@@ -52,6 +60,10 @@ function patch_ollama() {
 
   gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
   gsed -i 's/NumBatch:  512,/NumBatch:  '"$DEFAULT_BATCH_SIZE"',/g' "$OLLAMA_GIT_DIR"/api/types.go
+  gsed -i 's/Temperature:      0.8,/Temperature:      0.4,/g' "$OLLAMA_GIT_DIR"/api/types.go
+  gsed -i 's/TopP:             0.9,/TopP:             0.85,/g' "$OLLAMA_GIT_DIR"/api/types.go
+  gsed -i 's/NumCtx:    2048,/NumCtx:    8192,/g' "$OLLAMA_GIT_DIR"/api/types.go
+
   gsed -i '2i export BLAS_INCLUDE_DIRS='"$BLAS_INCLUDE_DIRS"'' "$OLLAMA_GIT_DIR"/scripts/build_darwin.sh
 
   # set ldflags to disable warnings spamming the output
@@ -63,9 +75,9 @@ function build_cli() {
   cd "$OLLAMA_GIT_DIR" || exit
 
   mkdir -p dist
-  VERSION=$VERSION BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS go generate ./... || exit 1
-  # make -C llama -j 8 || exit 1
-  VERSION=$VERSION BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS go build -o dist/ollama . || exit 1
+  # OLLAMA_CUSTOM_CPU_DEFS=$OLLAMA_CUSTOM_CPU_DEFS VERSION=$VERSION BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS go generate ./... || exit 1
+  # OLLAMA_CUSTOM_CPU_DEFS=$OLLAMA_CUSTOM_CPU_DEFS VERSION=$VERSION BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS go build -o dist/ollama . || exit 1
+  OLLAMA_CUSTOM_CPU_DEFS=$OLLAMA_CUSTOM_CPU_DEFS VERSION=$VERSION BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS make -j "$(nproc)" || exit 1
 }
 
 function build_app() {
@@ -117,9 +129,8 @@ function update_git() {
     mkdir -p "$BASE_DIR"
     cd "$BASE_DIR" || exit
 
-    # Temporary for Quantisation PR
-    git clone -j6 https://github.com/sammcj/ollama.git --depth=1
-    git checkout feature/kv-quant
+    git clone -j6 "$OLLAMA_GIT_REPO" --depth=1
+    git checkout "$OLLAMA_GIT_BRANCH"
   fi
 
   echo "updating ollama git repo"
@@ -131,7 +142,7 @@ function update_git() {
   git fetch --tags --force
   git pull
   git rebase --abort
-  git checkout feature/kv-quant
+  # git checkout feature/kv-quant
   cd "$OLLAMA_GIT_DIR" || exit
   set +e
 }
@@ -176,7 +187,6 @@ function run_app() {
     launchctl setenv OLLAMA_KEEP_ALIVE "$OLLAMA_KEEP_ALIVE"
   fi
 
-  # if OLLAMA_WAS_RUNNING=true, restart the app
   if [ "$OLLAMA_WAS_RUNNING" = true ]; then
     echo "Ollama was running, restarting..."
     open "/Applications/Ollama.app"
@@ -184,7 +194,8 @@ function run_app() {
 }
 
 # cleanup first
-rm -rf /Users/samm/git/ollama-fork/.git/modules/llama.cpp/rebase-apply || true
+rm -rf /Users/samm/git/ollama/.git/modules/llama.cpp/rebase-apply || true
+# rm -rf /Users/samm/git/ollama-fork/.git/modules/llama.cpp/rebase-apply || true
 
 update_git || store_error "Failed to update git"
 set_version || store_error "Failed to set version"
