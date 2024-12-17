@@ -80,6 +80,7 @@ function build_cli() {
   mkdir -p dist
   # OLLAMA_CUSTOM_CPU_DEFS=$OLLAMA_CUSTOM_CPU_DEFS VERSION=$VERSION BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS go generate ./... || exit 1
   # OLLAMA_CUSTOM_CPU_DEFS=$OLLAMA_CUSTOM_CPU_DEFS VERSION=$VERSION BLAS_INCLUDE_DIRS=$BLAS_INCLUDE_DIRS go build -o dist/ollama . || exit 1
+  # VERSION="$VERSION"
   OLLAMA_CUSTOM_CPU_DEFS="$OLLAMA_CUSTOM_CPU_DEFS" VERSION="$VERSION" BLAS_INCLUDE_DIRS="$BLAS_INCLUDE_DIRS" make -j "$(expr "$(nproc)" / 2)" || exit 1
   cp -f ollama dist/ollama
 }
@@ -153,7 +154,7 @@ function update_git() {
 
 function set_version() {
   cd "$OLLAMA_GIT_DIR" || exit
-  VERSION=$(git describe --tags --always)
+  VERSION=$(curl -s "https://api.github.com/repos/ollama/ollama/releases/latest" | jq -r .tag_name)
   export VERSION
   echo "Ollama version (from git tag): $VERSION"
 }
