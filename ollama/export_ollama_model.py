@@ -57,7 +57,14 @@ def rsync_model(source_ollama_path, dest_ollama_path, registry, repository, mode
 
         # Execute rsync
         print(f"Syncing model to {remote_host}:{dest_ollama_path}")
-        result = subprocess.run(rsync_cmd, check=True, capture_output=True, text=True)
+        # result = subprocess.run(rsync_cmd, check=True, capture_output=True, text=True)
+        # Do the same as above, but ensure the streaming output from rsync is displayed in real-time
+        result = subprocess.Popen(rsync_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        for line in result.stdout:
+            print(line, end='')
+        result.communicate()
+        if result.returncode != 0:
+            raise subprocess.CalledProcessError(result.returncode, result.args)
         if result.stderr:
             print("rsync output:", result.stderr)
         print(f"Model '{repository}{model_name}:{model_tag}' successfully synced to {remote_host}:{dest_ollama_path}")
