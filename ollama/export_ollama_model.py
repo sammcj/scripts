@@ -5,8 +5,43 @@ import argparse
 import subprocess
 from pathlib import Path
 
+def split_model_name(model_name):
+    """Split a model name that might include repository (e.g., 'technobyte/model' -> ('technobyte', 'model'))"""
+    if '/' in model_name:
+        return model_name.split('/', 1)
+    return None, model_name
+
 def get_model_manifest_path(ollama_path, registry, repository, model_name, model_tag):
-    return Path(ollama_path) / "models/manifests" / registry / repository / model_name / model_tag
+    # If model_name contains repository info, split it
+    repo_from_name, base_model_name = split_model_name(model_name)
+    if repo_from_name:
+        repository = repo_from_name
+        model_name = base_model_name
+
+    # Try all possible path combinations
+    paths = [
+        # Direct path (no library)
+        Path(ollama_path) / "models/manifests" / registry / repository / model_name / model_tag,
+        # With library before repository
+        Path(ollama_path) / "models/manifests" / registry / "library" / repository / model_name / model_tag,
+        # With library after registry, before model
+        Path(ollama_path) / "models/manifests" / registry / "library" / model_name / model_tag,
+        # Repository as part of model name (no library)
+        Path(ollama_path) / "models/manifests" / registry / f"{repository}/{model_name}" / model_tag,
+    ]
+
+    # Debug: Print all paths being checked
+    print("Checking the following paths:")
+    for path in paths:
+        print(f"- {path} {'(exists)' if path.exists() else '(not found)'}")
+
+    # Return the first path that exists
+    for path in paths:
+        if path.exists():
+            return path
+
+    # If no path exists, return the first path for error handling
+    return paths[0]
 
 def get_blob_file_path(ollama_path, digest):
     return Path(ollama_path) / "models/blobs" / f"sha256-{digest.split(':')[1]}"
@@ -22,6 +57,9 @@ def rsync_model(source_ollama_path, dest_ollama_path, registry, repository, mode
     try:
         # Get and read manifest
         manifest_path = get_model_manifest_path(source_ollama_path, registry, repository, model_name, model_tag)
+        if not manifest_path.exists():
+            raise FileNotFoundError(f"Could not find model manifest in any of the expected locations for {model_name}:{model_tag}")
+
         manifest = read_manifest(manifest_path)
 
         # Change to source directory
@@ -57,8 +95,6 @@ def rsync_model(source_ollama_path, dest_ollama_path, registry, repository, mode
 
         # Execute rsync
         print(f"Syncing model to {remote_host}:{dest_ollama_path}")
-        # result = subprocess.run(rsync_cmd, check=True, capture_output=True, text=True)
-        # Do the same as above, but ensure the streaming output from rsync is displayed in real-time
         result = subprocess.Popen(rsync_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         for line in result.stdout:
             print(line, end='')
@@ -67,7 +103,7 @@ def rsync_model(source_ollama_path, dest_ollama_path, registry, repository, mode
             raise subprocess.CalledProcessError(result.returncode, result.args)
         if result.stderr:
             print("rsync output:", result.stderr)
-        print(f"Model '{repository}{model_name}:{model_tag}' successfully synced to {remote_host}:{dest_ollama_path}")
+        print(f"Model '{repository}/{model_name}:{model_tag}' successfully synced to {remote_host}:{dest_ollama_path}")
 
     except subprocess.CalledProcessError as e:
         print(f"Error syncing model: {e}")
@@ -85,6 +121,9 @@ def rsync_model(source_ollama_path, dest_ollama_path, registry, repository, mode
 
 def create_zip(ollama_path, registry, repository, model_name, model_tag, output_zip):
     manifest_path = get_model_manifest_path(ollama_path, registry, repository, model_name, model_tag)
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"Could not find model manifest in any of the expected locations for {model_name}:{model_tag}")
+
     manifest = read_manifest(manifest_path)
 
     with zipfile.ZipFile(output_zip, 'w') as zipf:
@@ -100,7 +139,7 @@ def create_zip(ollama_path, registry, repository, model_name, model_tag, output_
         config_blob_path = get_blob_file_path(ollama_path, manifest['config']['digest'])
         zipf.write(config_blob_path, arcname=config_blob_path.relative_to(ollama_path))
 
-    print(f"Model '{repository}{model_name}:{model_tag}' exported successfully to '{output_zip}'")
+    print(f"Model '{repository}/{model_name}:{model_tag}' exported successfully to '{output_zip}'")
     print(f"You can import it to another Ollama instance with 'tar -xf {output_zip}'")
 
 def main():
@@ -125,7 +164,7 @@ def main():
 
     # Required arguments (unless provided via environment variables)
     parser.add_argument('model_name', type=str, nargs='?', default=env_defaults['model_name'],
-                      help='Name of the model (e.g., gemma) [env: OLLAMA_MODEL_NAME]')
+                      help='Name of the model (e.g., gemma or repo/model) [env: OLLAMA_MODEL_NAME]')
     parser.add_argument('model_tag', type=str, nargs='?', default=env_defaults['model_tag'],
                       help='Tag of the model (e.g., 2b) [env: OLLAMA_MODEL_TAG]')
 
