@@ -1,4 +1,4 @@
-# uncomment if testing with Fastmail's test page or similar
+# uncomment if testing with Fastmail's test page https://app.fastmail.com/sievetester or similar
 # require ["variables", "body", "fileinto"];
 
 ######### Sam's Sieve rules for Customer Satisfaction Spam & SEO Spam #########
