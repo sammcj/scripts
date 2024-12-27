@@ -23,16 +23,13 @@ if not anyof(
             body :contains [
                 "Web Visitors Into Leads",
                 "lead generation",
-                "found your site",
                 "complimentary 14-day trial",
                 "SMS Text With Lead",
                 "privacy policy",
+                "SEO",
                 "terms & conditions",
                 "unsubscribe.aspx",
-                "leadgeneration.com",
-                "my name is",
-                "my name's",
-                "just found your site"
+                "leadgeneration.com"
             ]
         )
     ) {
