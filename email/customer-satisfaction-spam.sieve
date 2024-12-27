@@ -156,6 +156,7 @@ if not anyof(
                 "we'd love to hear your feedback",
                 "How would you rate the help",
                 "rate your experience with us",
+                "your feedback is important",
                 "rate by clicking",
                 "click here to rate",
                 "click to rate your"
@@ -212,10 +213,12 @@ if not anyof(
                 "brief survey",
                 "your opinion matters",
                 "we value your feedback",
+                "your feedback is important",
                 "how did we do"
             ],
             body :contains :comparator "i;ascii-casemap" [
                 "rate your experience",
+                "your feedback is important",
                 "star rating",
                 "would you recommend",
                 "tell us how we did",
