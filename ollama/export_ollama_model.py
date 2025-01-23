@@ -51,6 +51,40 @@ def get_model_manifest_path(ollama_path, registry, repository, model_name, model
 def get_blob_file_path(ollama_path, digest):
     return Path(ollama_path) / "models/blobs" / f"sha256-{digest.split(':')[1]}"
 
+def list_models(ollama_path):
+    """List all models in the given Ollama path."""
+    models = []
+    manifests_path = Path(ollama_path) / "models/manifests"
+    if not manifests_path.exists():
+        return models
+
+    for registry_dir in manifests_path.iterdir():
+        if not registry_dir.is_dir():
+            continue
+
+        # Handle different repository directories
+        for repo_dir in registry_dir.iterdir():
+            if not repo_dir.is_dir():
+                continue
+
+            # Handle library directory specially
+            if repo_dir.name == 'library':
+                # List models directly in library
+                for model_dir in repo_dir.iterdir():
+                    if model_dir.is_dir():
+                        for tag_dir in model_dir.iterdir():
+                            if tag_dir.is_dir():
+                                models.append((model_dir.name, tag_dir.name))
+            else:
+                # For non-library repositories
+                for model_dir in repo_dir.iterdir():
+                    if model_dir.is_dir():
+                        for tag_dir in model_dir.iterdir():
+                            if tag_dir.is_dir():
+                                models.append((f"{repo_dir.name}/{model_dir.name}", tag_dir.name))
+
+    return sorted(set(models))  # Remove duplicates and sort
+
 def read_manifest(manifest_path):
     with open(manifest_path, 'r') as file:
         return json.load(file)
@@ -147,6 +181,59 @@ def create_zip(ollama_path, registry, repository, model_name, model_tag, output_
     print(f"Model '{repository}/{model_name}:{model_tag}' exported successfully to '{output_zip}'")
     print(f"You can import it to another Ollama instance with 'tar -xf {output_zip}'")
 
+def compare_models(local_path, remote_host, remote_path):
+    """Compare local and remote models, returning models that exist only locally."""
+    print("Scanning local models...")
+    local_models = list_models(local_path)
+    if not local_models:
+        print("No local models found.")
+        return []
+
+    print(f"\nFound {len(local_models)} local models.")
+
+    print(f"\nScanning remote models on {remote_host}...")
+    try:
+        # List remote models using ls command instead of Python script
+        cmd = f"ssh {remote_host} 'find {remote_path}/models/manifests -mindepth 4 -maxdepth 4 -type d'"
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+        if result.returncode != 0:
+            print(f"Error accessing remote host: {result.stderr}")
+            return []
+
+        # Parse remote models from directory structure
+        remote_models = set()
+        for line in result.stdout.splitlines():
+            if not line.strip():
+                continue
+            try:
+                # Extract model info from path
+                parts = Path(line).parts
+                if len(parts) >= 4:
+                    registry_idx = parts.index('manifests') + 1
+                    if registry_idx + 3 < len(parts):
+                        repo = parts[registry_idx + 1]
+                        model = parts[registry_idx + 2]
+                        tag = parts[registry_idx + 3]
+                        if repo == 'library':
+                            remote_models.add((model, tag))
+                        else:
+                            remote_models.add((f"{repo}/{model}", tag))
+            except Exception as e:
+                print(f"Warning: Error processing remote path {line}: {e}")
+
+        print(f"Found {len(remote_models)} remote models.")
+
+        # Find models that exist only locally
+        unique_local = set(local_models) - remote_models
+        if unique_local:
+            print(f"\nFound {len(unique_local)} models that exist only locally.")
+        return sorted(unique_local)
+
+    except Exception as e:
+        print(f"Error comparing models: {e}")
+        return []
+
 def main():
     # Default paths
     homedir = Path.home()
@@ -167,6 +254,11 @@ def main():
 
     examples = """
 ### Example Usage
+
+## List models that exist locally but not on remote host
+
+    python export_ollama_model.py --remote-host user@server --list-unique
+    python export_ollama_model.py --remote-host user@server --remote-ollama-path /opt/ollama --list-unique
 
 ## Sync a model to a remote host
 
@@ -215,22 +307,38 @@ def main():
                       help='Output zip file name [env: OLLAMA_OUTPUT]')
     parser.add_argument('--remote-host', type=str, default=env_defaults['remote_host'],
                       help='Remote host (e.g., user@remote) [env: OLLAMA_REMOTE_HOST]')
+    parser.add_argument('--list-unique', action='store_true',
+                      help='List models that exist locally but not on the remote host')
 
     args = parser.parse_args()
 
-    # Validate required arguments
-    if not args.model_name or not args.model_tag:
-        parser.error("model_name and model_tag are required either as arguments or environment variables")
+    # Validate arguments based on mode
+    if args.list_unique:
+        if not args.remote_host:
+            parser.error("--remote-host is required when using --list-unique")
+    else:
+        # Regular mode requires model name and tag
+        if not args.model_name or not args.model_tag:
+            parser.error("model_name and model_tag are required either as arguments or environment variables")
 
-    if args.remote_host and args.output:
-        parser.error("Please specify either --output or --remote-host, not both")
+        if args.remote_host and args.output:
+            parser.error("Please specify either --output or --remote-host, not both")
 
     # Ensure local ollama path exists
     ollama_path = Path(args.ollama_path)
     if not ollama_path.exists():
         parser.error(f"Local Ollama path does not exist: {ollama_path}")
 
-    if args.remote_host:
+    if args.list_unique:
+        # List models that exist locally but not on remote
+        unique_models = compare_models(args.ollama_path, args.remote_host, args.remote_ollama_path)
+        if unique_models:
+            print("\nModels that exist locally but not on remote host:")
+            for name, tag in unique_models:
+                print(f"  {name}:{tag}")
+        else:
+            print("\nNo unique local models found.")
+    elif args.remote_host:
         rsync_model(
             ollama_path,
             args.remote_ollama_path,
