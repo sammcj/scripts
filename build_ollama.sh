@@ -8,13 +8,13 @@ set -x # debug output
 macOSSDK=$(xcrun --show-sdk-path)
 export macOSSDK
 
-# OLLAMA_GIT_REPO="${OLLAMA_GIT_REPO:-https://github.com/ollama/ollama.git}"
-# OLLAMA_GIT_DIR="${OLLAMA_GIT_DIR:-$HOME/git/ollama}"
-# OLLAMA_GIT_BRANCH="${OLLAMA_GIT_BRANCH:-main}"
+OLLAMA_GIT_REPO="${OLLAMA_GIT_REPO:-https://github.com/ollama/ollama.git}"
+OLLAMA_GIT_DIR="${OLLAMA_GIT_DIR:-$HOME/git/ollama}"
+OLLAMA_GIT_BRANCH="${OLLAMA_GIT_BRANCH:-main}"
 
-OLLAMA_GIT_REPO="${OLLAMA_GIT_REPO:-https://github.com/sammcj/ollama.git}"
-OLLAMA_GIT_DIR="${OLLAMA_GIT_DIR:-$HOME/git/ollama-fork}"
-OLLAMA_GIT_BRANCH="${OLLAMA_GIT_BRANCH:-fix/memory_estimates}"
+# OLLAMA_GIT_REPO="${OLLAMA_GIT_REPO:-https://github.com/sammcj/ollama.git}"
+# OLLAMA_GIT_DIR="${OLLAMA_GIT_DIR:-$HOME/git/ollama-fork}"
+# OLLAMA_GIT_BRANCH="${OLLAMA_GIT_BRANCH:-fix/memory_estimates}"
 
 PATCH_OLLAMA=${PATCH_OLLAMA:-"true"}
 PATCH_OLLAMA=$(echo "$PATCH_OLLAMA" | tr '[:upper:]' '[:lower:]')
@@ -35,7 +35,7 @@ export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*
 export OLLAMA_KV_CACHE_TYPE=q8_0
 export OLLAMA_FLASH_ATTENTION=1
 export CGO_LDFLAGS="-Wl,-no_warn_duplicate_libraries"
-export OLLAMA_CUSTOM_CPU_DEFS="-DGGML_NATIVE=on -DGGML_F16C=on -DGGML_FMA=on -DGGML_SCHED_MAX_COPIES=6"
+export OLLAMA_CUSTOM_CPU_DEFS="-DGGML_NATIVE=on -DGGML_F16C=on -DGGML_FMA=on -DGGML_SCHED_MAX_COPIES=6 -DGGML_METAL_USE_BF16=on"
 
 # a function that takes input (error output from another command), and stores it in a variable for printing later
 function store_error() {
@@ -63,7 +63,7 @@ function patch_ollama() {
 
   gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
   gsed -i 's/NumBatch:  512,/NumBatch:  '"$DEFAULT_BATCH_SIZE"',/g' "$OLLAMA_GIT_DIR"/api/types.go
-  gsed -i 's/Temperature:      0.8,/Temperature:      0.4,/g' "$OLLAMA_GIT_DIR"/api/types.go
+  gsed -i 's/Temperature:      0.8,/Temperature:      0.2,/g' "$OLLAMA_GIT_DIR"/api/types.go
   gsed -i 's/TopP:             0.9,/TopP:             0.85,/g' "$OLLAMA_GIT_DIR"/api/types.go
   gsed -i 's/NumCtx:    2048,/NumCtx:    8192,/g' "$OLLAMA_GIT_DIR"/api/types.go
 
@@ -91,10 +91,16 @@ function build_app() {
 
   set -e
 
-  npm i
-  npx electron-forge make --arch arm64
+  npm i || exit 1
 
-  codesign --force --deep --sign - out/Ollama-darwin-arm64/Ollama.app
+  # comment out the line containing '../dist/darwin-amd64/lib' in macapp/forge.config.ts
+  gsed -i '/..\/dist\/darwin-amd64\/lib/s/^/\/\//g' forge.config.ts #CHANGEME if ollama fixes this
+
+  npx electron-forge make --arch arm64 || exit 1
+  # npm run make || exit 1
+  # npm run package || exit 1
+
+  codesign --force --deep --sign - out/Ollama-darwin-arm64/Ollama.app || codesign --force --deep --sign - out/Ollama-darwin-universal/Ollama.app
 
   # check if Ollama is running, if it is set WAS_RUNNING to true
   if pgrep -x "Ollama" >/dev/null; then
@@ -105,7 +111,7 @@ function build_app() {
   pkill Ollama || true
 
   rm -rf /Applications/Ollama.app
-  mv out/Ollama-darwin-arm64/Ollama.app /Applications/Ollama.app
+  mv out/Ollama-darwin-arm64/Ollama.app /Applications/Ollama.app || mv out/Ollama-darwin-universal/Ollama.app /Applications/Ollama.app
   codesign --force --deep --sign - /Applications/Ollama.app
 
   set +e
