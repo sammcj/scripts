@@ -5,6 +5,11 @@ import argparse
 import subprocess
 from pathlib import Path
 
+# Example remote sync model usage:
+# python export_ollama_model.py --remote-host <username>@<hostname> <model_name> <model_tag>
+# e.g:
+# python export_ollama_model.py --remote-host sam@server technobyte/c4ai-command-r7b-12-2024 q5_k_M
+
 def split_model_name(model_name):
     """Split a model name that might include repository (e.g., 'technobyte/model' -> ('technobyte', 'model'))"""
     if '/' in model_name:
@@ -160,7 +165,32 @@ def main():
         'model_tag': os.getenv('OLLAMA_MODEL_TAG')
     }
 
-    parser = argparse.ArgumentParser(description='Export Ollama model to a zip file or sync to remote host.')
+    examples = '''
+Examples:
+    # Export a model to a zip file
+    python export_ollama_model.py gemma 2b
+    python export_ollama_model.py mistral latest --output mistral_backup.zip
+    python export_ollama_model.py technobyte/c4ai-command-r7b-12-2024 q5_k_M
+
+    # Sync a model to a remote host
+    python export_ollama_model.py --remote-host user@server gemma 2b
+    python export_ollama_model.py --remote-host user@server --remote-ollama-path /opt/ollama mistral latest
+
+    # Using environment variables
+    export OLLAMA_MODEL_NAME=gemma
+    export OLLAMA_MODEL_TAG=2b
+    export OLLAMA_OUTPUT=gemma_backup.zip
+    python export_ollama_model.py  # Will use environment variables
+
+    export OLLAMA_REMOTE_HOST=user@server
+    python export_ollama_model.py gemma 2b  # Will sync to remote host
+    '''
+
+    parser = argparse.ArgumentParser(
+        description='Export Ollama model to a zip file or sync to remote host.',
+        epilog=examples,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
 
     # Required arguments (unless provided via environment variables)
     parser.add_argument('model_name', type=str, nargs='?', default=env_defaults['model_name'],
