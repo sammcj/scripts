@@ -89,51 +89,64 @@ def read_manifest(manifest_path):
     with open(manifest_path, 'r') as file:
         return json.load(file)
 
-def rsync_model(source_ollama_path, dest_ollama_path, registry, repository, model_name, model_tag, remote_host):
+def rsync_model(source_ollama_path, dest_ollama_path, registry, repository, model_name, model_tag, remote_host, pull=False):
     # Store current directory
     original_dir = os.getcwd()
 
     try:
-        # Get and read manifest
-        manifest_path = get_model_manifest_path(source_ollama_path, registry, repository, model_name, model_tag)
-        if not manifest_path.exists():
-            raise FileNotFoundError(f"Could not find model manifest in any of the expected locations for {model_name}:{model_tag}")
+        # Determine model paths
+        model_path = f"models/manifests/{registry}/{repository}/{model_name}/{model_tag}"
+        blobs_path = "models/blobs"
 
-        manifest = read_manifest(manifest_path)
+        if pull:
+            # For pull mode, check if the model exists on the remote
+            print(f"Checking for model on remote host {remote_host}...")
+            check_cmd = f"ssh {remote_host} '[ -d {dest_ollama_path}/{model_path} ]'"
+            result = subprocess.run(check_cmd, shell=True)
+            if result.returncode != 0:
+                raise FileNotFoundError(f"Could not find model manifest on remote host for {model_name}:{model_tag}")
+            print("Model found on remote host.")
+        else:
+            # For push mode, check local manifest
+            manifest_path = get_model_manifest_path(source_ollama_path, registry, repository, model_name, model_tag)
+            if not manifest_path.exists():
+                raise FileNotFoundError(f"Could not find model manifest in any of the expected locations for {model_name}:{model_tag}")
+            manifest = read_manifest(manifest_path)
 
-        # Change to source directory
-        os.chdir(source_ollama_path)
-
-        # Create list of files to sync with their correct relative paths
-        files_to_sync = []
-
-        # Add manifest with relative path
-        manifest_rel_path = manifest_path.relative_to(source_ollama_path)
-        files_to_sync.append(str(manifest_rel_path))
-
-        # Add blobs with relative paths
-        for layer in manifest['layers']:
-            blob_rel_path = get_blob_file_path(source_ollama_path, layer['digest']).relative_to(source_ollama_path)
-            files_to_sync.append(str(blob_rel_path))
-
-        # Add config blob with relative path
-        config_blob_rel_path = get_blob_file_path(source_ollama_path, manifest['config']['digest']).relative_to(source_ollama_path)
-        files_to_sync.append(str(config_blob_rel_path))
+        # Change to appropriate directory
+        os.chdir(source_ollama_path if not pull else '.')
 
         # Construct rsync command
         rsync_cmd = [
             'rsync',
-            '--progress', # show progress during transfer
-            '--partial',  # keep partially transferred files
-            '-avz',  # archive mode, verbose, compress
-            '--relative',  # preserve relative paths
-            '--rsync-path', f'mkdir -p {dest_ollama_path} && rsync',  # ensure remote directory exists
-            *files_to_sync,
-            f'{remote_host}:{dest_ollama_path}/'  # add trailing slash to ensure proper directory handling
+            '--progress',  # show progress during transfer
+            '--partial',   # keep partially transferred files
+            '-avz',       # archive mode, verbose, compress
+            '--relative'  # preserve relative paths
         ]
 
+        if pull:
+            # Pull mode: remote -> local
+            print(f"Pulling model from {remote_host}...")
+            # Ensure local directory exists
+            os.makedirs(source_ollama_path, exist_ok=True)
+            rsync_cmd.extend([
+                f'{remote_host}:{dest_ollama_path}/{model_path}',  # source: remote model
+                f'{remote_host}:{dest_ollama_path}/{blobs_path}/',  # source: remote blobs
+                source_ollama_path  # destination: local ollama path
+            ])
+        else:
+            # Push mode: local -> remote
+            print(f"Pushing model to {remote_host}...")
+            rsync_cmd.extend([
+                '--rsync-path', f'mkdir -p {dest_ollama_path} && rsync',  # ensure remote directory exists
+                model_path,     # source: local model
+                f'{blobs_path}/',  # source: local blobs
+                f'{remote_host}:{dest_ollama_path}/'  # destination: remote ollama path
+            ])
+
         # Execute rsync
-        print(f"Syncing model to {remote_host}:{dest_ollama_path}")
+        print(f"Running rsync {'from' if pull else 'to'} {remote_host}...")
         result = subprocess.Popen(rsync_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         for line in result.stdout:
             print(line, end='')
@@ -260,10 +273,15 @@ def main():
     python export_ollama_model.py --remote-host user@server --list-unique
     python export_ollama_model.py --remote-host user@server --remote-ollama-path /opt/ollama --list-unique
 
-## Sync a model to a remote host
+## Sync models between hosts
 
-    python export_ollama_model.py --remote-host user@server gemma 2b
+    # Push a model to remote host
+    python export_ollama_model.py --remote-host user@server gemma q6_k
     python export_ollama_model.py --remote-host user@server --remote-ollama-path /opt/ollama mistral latest
+
+    # Pull a model from remote host
+    python export_ollama_model.py --remote-host user@server --pull gemma 2b
+    python export_ollama_model.py --remote-host user@server --remote-ollama-path /opt/ollama --pull mistral latest
 
 ## Export a model to a zip file
 
@@ -309,6 +327,8 @@ def main():
                       help='Remote host (e.g., user@remote) [env: OLLAMA_REMOTE_HOST]')
     parser.add_argument('--list-unique', action='store_true',
                       help='List models that exist locally but not on the remote host')
+    parser.add_argument('--pull', action='store_true',
+                      help='Pull model from remote host instead of pushing')
 
     args = parser.parse_args()
 
@@ -324,9 +344,9 @@ def main():
         if args.remote_host and args.output:
             parser.error("Please specify either --output or --remote-host, not both")
 
-    # Ensure local ollama path exists
+    # Ensure local ollama path exists (unless pulling)
     ollama_path = Path(args.ollama_path)
-    if not ollama_path.exists():
+    if not args.pull and not ollama_path.exists():
         parser.error(f"Local Ollama path does not exist: {ollama_path}")
 
     if args.list_unique:
@@ -346,7 +366,8 @@ def main():
             args.repository,
             args.model_name,
             args.model_tag,
-            args.remote_host
+            args.remote_host,
+            pull=args.pull
         )
     else:
         output_zip = args.output or f"{args.model_name}_{args.model_tag}_export.zip"
