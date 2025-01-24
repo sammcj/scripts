@@ -195,24 +195,24 @@ def create_zip(ollama_path, registry, repository, model_name, model_tag, output_
     print(f"You can import it to another Ollama instance with 'tar -xf {output_zip}'")
 
 def compare_models(local_path, remote_host, remote_path):
-    """Compare local and remote models, returning models that exist only locally."""
+    """Compare local and remote models, returning tuple of (local_only, remote_only) models."""
     print("Scanning local models...")
     local_models = list_models(local_path)
     if not local_models:
         print("No local models found.")
-        return []
-
-    print(f"\nFound {len(local_models)} local models.")
+    else:
+        print(f"Found {len(local_models)} local models.")
 
     print(f"\nScanning remote models on {remote_host}...")
     try:
-        # List remote models using ls command instead of Python script
-        cmd = f"ssh {remote_host} 'find {remote_path}/models/manifests -mindepth 4 -maxdepth 4 -type d'"
+        # List remote models using ls command
+        # We need to look in each repository directory (library and others)
+        cmd = f"ssh {remote_host} 'cd {remote_path}/models/manifests/registry.ollama.ai && find . -mindepth 2 -maxdepth 2 -type d'"
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
         if result.returncode != 0:
             print(f"Error accessing remote host: {result.stderr}")
-            return []
+            return [], []
 
         # Parse remote models from directory structure
         remote_models = set()
@@ -220,32 +220,62 @@ def compare_models(local_path, remote_host, remote_path):
             if not line.strip():
                 continue
             try:
-                # Extract model info from path
-                parts = Path(line).parts
-                if len(parts) >= 4:
-                    registry_idx = parts.index('manifests') + 1
-                    if registry_idx + 3 < len(parts):
-                        repo = parts[registry_idx + 1]
-                        model = parts[registry_idx + 2]
-                        tag = parts[registry_idx + 3]
-                        if repo == 'library':
-                            remote_models.add((model, tag))
-                        else:
-                            remote_models.add((f"{repo}/{model}", tag))
+                # Remove leading ./ from path
+                path = line.strip().lstrip('./').rstrip('/')
+                if not path:
+                    continue
+
+                parts = path.split('/')
+                if len(parts) == 2:
+                    repo, model = parts
+                    # Get all tags for this model
+                    tags_cmd = f"ssh {remote_host} 'cd {remote_path}/models/manifests/registry.ollama.ai/{repo}/{model} && ls -1'"
+                    tags_result = subprocess.run(tags_cmd, shell=True, capture_output=True, text=True)
+                    if tags_result.returncode == 0:
+                        for tag in tags_result.stdout.splitlines():
+                            tag = tag.strip()
+                            if tag:
+                                if repo == 'library':
+                                    remote_models.add((model, tag))
+                                else:
+                                    remote_models.add((f"{repo}/{model}", tag))
             except Exception as e:
                 print(f"Warning: Error processing remote path {line}: {e}")
 
         print(f"Found {len(remote_models)} remote models.")
 
-        # Find models that exist only locally
-        unique_local = set(local_models) - remote_models
-        if unique_local:
-            print(f"\nFound {len(unique_local)} models that exist only locally.")
-        return sorted(unique_local)
+        # Find models that exist only on one side
+        local_only = set(local_models) - remote_models
+        remote_only = remote_models - set(local_models)
+
+        print("\nComparison complete:")
+        print(f"- Found {len(local_only)} models that exist only locally")
+        print(f"- Found {len(remote_only)} models that exist only on remote")
+
+        return sorted(local_only), sorted(remote_only)
 
     except Exception as e:
         print(f"Error comparing models: {e}")
-        return []
+        return [], []
+
+def format_model_table(local_models, remote_models):
+    """Format models into a side-by-side table."""
+    # Get the maximum length for padding
+    max_local = max([len(f"{name}:{tag}") for name, tag in local_models]) if local_models else 0
+    max_remote = max([len(f"{name}:{tag}") for name, tag in remote_models]) if remote_models else 0
+
+    # Create the header
+    header = f"{'Local Only':<{max(max_local, 10)}} | {'Remote Only':<{max(max_remote, 10)}}"
+    separator = f"{'-' * max(max_local, 10)}-+-{'-' * max(max_remote, 10)}"
+
+    # Create the rows
+    rows = []
+    for i in range(max(len(local_models), len(remote_models))):
+        local = f"{local_models[i][0]}:{local_models[i][1]:<{max_local-len(local_models[i][0])-1}}" if i < len(local_models) else " " * max_local
+        remote = f"{remote_models[i][0]}:{remote_models[i][1]}" if i < len(remote_models) else ""
+        rows.append(f"{local} | {remote}")
+
+    return "\n".join([header, separator] + rows)
 
 def main():
     # Default paths
@@ -268,15 +298,16 @@ def main():
     examples = """
 ### Example Usage
 
-## List models that exist locally but not on remote host
+## Compare models between hosts
 
-    python export_ollama_model.py --remote-host user@server --list-unique
-    python export_ollama_model.py --remote-host user@server --remote-ollama-path /opt/ollama --list-unique
+    # Show side-by-side comparison of unique models
+    python export_ollama_model.py --remote-host user@server --compare
+    python export_ollama_model.py --remote-host user@server --remote-ollama-path /opt/ollama --compare
 
 ## Sync models between hosts
 
     # Push a model to remote host
-    python export_ollama_model.py --remote-host user@server gemma q6_k
+    python export_ollama_model.py --remote-host user@server gemma 2b
     python export_ollama_model.py --remote-host user@server --remote-ollama-path /opt/ollama mistral latest
 
     # Pull a model from remote host
@@ -325,17 +356,17 @@ def main():
                       help='Output zip file name [env: OLLAMA_OUTPUT]')
     parser.add_argument('--remote-host', type=str, default=env_defaults['remote_host'],
                       help='Remote host (e.g., user@remote) [env: OLLAMA_REMOTE_HOST]')
-    parser.add_argument('--list-unique', action='store_true',
-                      help='List models that exist locally but not on the remote host')
+    parser.add_argument('--compare', action='store_true',
+                      help='Show side-by-side comparison of models that exist only on one host')
     parser.add_argument('--pull', action='store_true',
                       help='Pull model from remote host instead of pushing')
 
     args = parser.parse_args()
 
     # Validate arguments based on mode
-    if args.list_unique:
+    if args.compare:
         if not args.remote_host:
-            parser.error("--remote-host is required when using --list-unique")
+            parser.error("--remote-host is required when using --compare")
     else:
         # Regular mode requires model name and tag
         if not args.model_name or not args.model_tag:
@@ -349,15 +380,14 @@ def main():
     if not args.pull and not ollama_path.exists():
         parser.error(f"Local Ollama path does not exist: {ollama_path}")
 
-    if args.list_unique:
-        # List models that exist locally but not on remote
-        unique_models = compare_models(args.ollama_path, args.remote_host, args.remote_ollama_path)
-        if unique_models:
-            print("\nModels that exist locally but not on remote host:")
-            for name, tag in unique_models:
-                print(f"  {name}:{tag}")
+    if args.compare:
+        # Compare models between hosts
+        local_only, remote_only = compare_models(args.ollama_path, args.remote_host, args.remote_ollama_path)
+        if local_only or remote_only:
+            print("\nModel Comparison:")
+            print(format_model_table(local_only, remote_only))
         else:
-            print("\nNo unique local models found.")
+            print("\nNo unique models found on either host.")
     elif args.remote_host:
         rsync_model(
             ollama_path,
