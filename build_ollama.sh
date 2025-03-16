@@ -59,7 +59,7 @@ function patch_ollama() {
   echo "patching ollama with Sams defaults"
 
   # apply patches
-  patch -p1 <~/git/sammcj/scripts/ollama/ollama_patches.diff || exit 1
+  # patch -p1 <~/git/sammcj/scripts/ollama/ollama_patches.diff || exit 1
 
   gsed -i 's/FlashAttn: false,/FlashAttn: true,/g' "$OLLAMA_GIT_DIR"/api/types.go
   gsed -i 's/NumBatch:  512,/NumBatch:  '"$DEFAULT_BATCH_SIZE"',/g' "$OLLAMA_GIT_DIR"/api/types.go
@@ -214,6 +214,10 @@ function run_app() {
 rm -rf /Users/samm/git/ollama/.git/modules/llama.cpp/rebase-apply || true
 # rm -rf /Users/samm/git/ollama-fork/.git/modules/llama.cpp/rebase-apply || true
 
+# temporarily unset OLLAMA_HOST, but store the value and return it to the environment after the script
+export OLLAMA_HOST_BACKUP=$OLLAMA_HOST
+unset OLLAMA_HOST
+
 update_git || store_error "Failed to update git"
 set_version || store_error "Failed to set version"
 patch_ollama || store_error "Failed to patch ollama"
@@ -221,6 +225,9 @@ build_cli || store_error "Failed to build ollama cli"
 build_app || store_error "Failed to build ollama app"
 # update_fw_rules || store_error "Failed to update firewall rules"
 run_app || store_error "Failed to run app"
+
+# return OLLAMA_HOST to the environment
+export OLLAMA_HOST=$OLLAMA_HOST_BACKUP
 
 # unset the error trap
 trap - ERR
