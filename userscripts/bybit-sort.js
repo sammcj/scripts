@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bybit Position Table Sorter + Distance Calculator + Symbol Highlighter
 // @namespace    http://tampermonkey.net/
-// @version      1.4
+// @version      1.5
 // @description  Add sorting functionality, distance-to-exit column, and highlight current symbol in Bybit position tables
 // @author       You
 // @match        https://www.bybit.com/*
@@ -228,31 +228,68 @@
 
         var tbody = table.querySelector('tbody');
         var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+        var currentSymbol = getCurrentSymbolFromURL();
 
-        rows.sort(function(a, b) {
-            var aCell = a.children[columnIndex];
-            var bCell = b.children[columnIndex];
-
-            var aVal = getSortValue(aCell, columnIndex);
-            var bVal = getSortValue(bCell, columnIndex);
-
-            if (typeof aVal === 'string') {
-                if (ascending) {
-                    return aVal.localeCompare(bVal);
-                } else {
-                    return bVal.localeCompare(aVal);
-                }
-            } else {
-                if (ascending) {
-                    return aVal - bVal;
-                } else {
-                    return bVal - aVal;
-                }
-            }
-        });
+        // Separate highlighted (current symbol) rows from others
+        var highlightedRows = [];
+        var normalRows = [];
 
         for (var i = 0; i < rows.length; i++) {
-            tbody.appendChild(rows[i]);
+            var row = rows[i];
+            var isHighlighted = false;
+
+            if (currentSymbol && row.children[0]) {
+                var cellText = row.children[0].textContent.trim();
+                if (cellText === currentSymbol ||
+                    cellText.indexOf(currentSymbol) === 0 ||
+                    cellText.includes(currentSymbol + '-') ||
+                    cellText.includes(currentSymbol + 'USDT') ||
+                    cellText.includes(currentSymbol + 'USD')) {
+                    isHighlighted = true;
+                }
+            }
+
+            if (isHighlighted) {
+                highlightedRows.push(row);
+            } else {
+                normalRows.push(row);
+            }
+        }
+
+        // Sort both groups separately
+        function sortRowGroup(rowGroup) {
+            rowGroup.sort(function(a, b) {
+                var aCell = a.children[columnIndex];
+                var bCell = b.children[columnIndex];
+
+                var aVal = getSortValue(aCell, columnIndex);
+                var bVal = getSortValue(bCell, columnIndex);
+
+                if (typeof aVal === 'string') {
+                    if (ascending) {
+                        return aVal.localeCompare(bVal);
+                    } else {
+                        return bVal.localeCompare(aVal);
+                    }
+                } else {
+                    if (ascending) {
+                        return aVal - bVal;
+                    } else {
+                        return bVal - aVal;
+                    }
+                }
+            });
+        }
+
+        sortRowGroup(highlightedRows);
+        sortRowGroup(normalRows);
+
+        // Append highlighted rows first, then normal rows
+        for (var i = 0; i < highlightedRows.length; i++) {
+            tbody.appendChild(highlightedRows[i]);
+        }
+        for (var i = 0; i < normalRows.length; i++) {
+            tbody.appendChild(normalRows[i]);
         }
 
         // Re-apply symbol highlighting after sorting
