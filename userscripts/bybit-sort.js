@@ -15,7 +15,8 @@
         if (!text || text === '--') {
             return 0;
         }
-        var cleaned = text.replace(/[,\s£$€¥₹]/g, '');
+        // Remove currency symbols, spaces, commas, and crypto suffixes like USDT, BTC, ETH, AUD
+        var cleaned = text.replace(/[,\s£$€¥₹]/g, '').replace(/\b(USDT|BTC|ETH|AUD|USD|EUR|GBP)\b/gi, '');
         var match = cleaned.match(/-?\d+\.?\d*/);
         if (match) {
             return parseFloat(match[0]);
@@ -161,9 +162,13 @@
         var table = cell.closest('table');
         var headers = table.querySelectorAll('thead th');
         var isDistanceColumn = false;
+        var columnHeader = '';
 
-        if (headers[columnIndex] && headers[columnIndex].hasAttribute('data-distance-column')) {
-            isDistanceColumn = true;
+        if (headers[columnIndex]) {
+            if (headers[columnIndex].hasAttribute('data-distance-column')) {
+                isDistanceColumn = true;
+            }
+            columnHeader = headers[columnIndex].textContent.toLowerCase();
         }
 
         if (isDistanceColumn) {
@@ -171,34 +176,48 @@
             return extractNumber(text);
         }
 
+        // Check if this is a P&L column by header text
+        if (columnHeader.includes('p&l') || columnHeader.includes('pnl') || columnHeader.includes('unrealized')) {
+            // For P&L columns, prioritise the USDT/currency value over percentage
+            return extractNumber(text);
+        }
+
+        // Check if this contains percentage in parentheses (like P&L columns often do)
+        percentMatch = text.match(/\(([+-]?\d+\.?\d*)%\)/);
+        if (percentMatch && (text.includes('USDT') || text.includes('AUD') || text.includes('USD'))) {
+            // This looks like a P&L cell with both currency and percentage - use currency value
+            return extractNumber(text);
+        }
+
+        // Default handling based on column position
         switch(columnIndex) {
             case 0:
                 return text.toLowerCase();
             case 1:
-                return extractNumber(text);
             case 2:
-                return extractNumber(text);
             case 3:
-                return extractNumber(text);
             case 4:
-                return extractNumber(text);
             case 5:
-                return extractNumber(text);
             case 6:
-                return extractNumber(text);
             case 7:
+            case 9:
                 return extractNumber(text);
             case 8:
+                // This was the old P&L column handling - now handled above more generically
                 percentMatch = text.match(/\(([+-]?\d+\.?\d*)%\)/);
                 if (percentMatch) {
                     return parseFloat(percentMatch[1]);
                 } else {
                     return extractNumber(text);
                 }
-            case 9:
-                return extractNumber(text);
             default:
-                return text.toLowerCase();
+                // For any other column, try to extract number first, fall back to text
+                var numValue = extractNumber(text);
+                if (numValue !== 0 || text === '0' || text === '--') {
+                    return numValue;
+                } else {
+                    return text.toLowerCase();
+                }
         }
     }
 
