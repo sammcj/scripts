@@ -21,6 +21,14 @@ PATCH_OLLAMA=$(echo "$PATCH_OLLAMA" | tr '[:upper:]' '[:lower:]')
 DEFAULT_BATCH_SIZE=${DEFAULT_BATCH_SIZE:-512}
 
 export OLLAMA_DEBUG=0
+export OLLAMA_CONTEXT_LENGTH=16384
+export OLLAMA_MAX_LOADED_MODELS=3
+export OLLAMA_KEEP_ALIVE='3h'
+export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
+export OLLAMA_KV_CACHE_TYPE=q8_0
+export OLLAMA_FLASH_ATTENTION=1
+export OLLAMA_NEW_ENGINE=1
+
 export GIN_MODE=release
 export ACCELERATE_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/Accelerate.framework"
 export FOUNDATION_FRAMEWORK="${macOSSDK}/System/Library/Frameworks/Foundation.framework"
@@ -29,11 +37,6 @@ export CLBLAST_FRAMEWORK="/opt/homebrew/Cellar/clblast"
 export CLBlast_DIR="/opt/homebrew/lib/cmake/CLBlast"
 export BLAS_INCLUDE_DIRS="${CLBLAST_FRAMEWORK},${VECLIB_FRAMEWORK},${ACCELERATE_FRAMEWORK},${FOUNDATION_FRAMEWORK},/opt/homebrew/Cellar/openblas"
 export BUILD_LLAMA_CPP_FIRST=${BUILD_LLAMA_CPP_FIRST:-true}
-export OLLAMA_MAX_LOADED_MODELS=4
-export OLLAMA_KEEP_ALIVE='8h'
-export OLLAMA_ORIGINS='http://localhost:*,https://localhost:*,app://obsidian.md*,app://*'
-export OLLAMA_KV_CACHE_TYPE=q8_0
-export OLLAMA_FLASH_ATTENTION=1
 export CGO_LDFLAGS="-Wl,-no_warn_duplicate_libraries"
 export OLLAMA_CUSTOM_CPU_DEFS="-DGGML_NATIVE=on -DGGML_F16C=on -DGGML_FMA=on -DGGML_SCHED_MAX_COPIES=6 -DGGML_METAL_USE_BF16=on"
 
