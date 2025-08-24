@@ -87,10 +87,13 @@ function build_cli() {
   # OLLAMA_CUSTOM_CPU_DEFS="$OLLAMA_CUSTOM_CPU_DEFS" VERSION="$VERSION" BLAS_INCLUDE_DIRS="$BLAS_INCLUDE_DIRS" make -j "$(expr "$(nproc)" / 2)" || exit 1
   # cp -f ollama dist/ollama
 
+  LD_FLAGS_OPT="-ldflags="-X=github.com/ollama/ollama/version.Version=$VERSION""
+  # or maybe GOFLAGS="-ldflags=-X=github.com/ollama/ollama/version.Version=$VERSION"
+
   # Changes for ollama builds 2025-02-04
   OLLAMA_CUSTOM_CPU_DEFS="$OLLAMA_CUSTOM_CPU_DEFS" VERSION="$VERSION" BLAS_INCLUDE_DIRS="$BLAS_INCLUDE_DIRS" cmake -B build -DCMAKE_OSX_SYSROOT="$macOSSDK" || exit 1
   OLLAMA_CUSTOM_CPU_DEFS="$OLLAMA_CUSTOM_CPU_DEFS" VERSION="$VERSION" BLAS_INCLUDE_DIRS="$BLAS_INCLUDE_DIRS" cmake --build build || exit 1
-  OLLAMA_CUSTOM_CPU_DEFS="$OLLAMA_CUSTOM_CPU_DEFS" VERSION="$VERSION" BLAS_INCLUDE_DIRS="$BLAS_INCLUDE_DIRS" go build -trimpath -o ./dist/darwin/ollama || exit 1
+  OLLAMA_CUSTOM_CPU_DEFS="$OLLAMA_CUSTOM_CPU_DEFS" VERSION="$VERSION" BLAS_INCLUDE_DIRS="$BLAS_INCLUDE_DIRS" go build -trimpath -o ./dist/darwin/ollama "$LD_FLAGS_OPT" || exit 1
 
 }
 
