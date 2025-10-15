@@ -74,6 +74,10 @@ function patch_ollama() {
 
   # set ldflags to disable warnings spamming the output
   gsed -i '2i export LDFLAGS="-w"' "$OLLAMA_GIT_DIR"/scripts/build_darwin.sh
+
+  # Fix CMake FRAMEWORK DESTINATION issue for CUDA and Vulkan targets
+  gsed -i '/LIBRARY DESTINATION \${OLLAMA_INSTALL_DIR} COMPONENT CUDA$/a\        FRAMEWORK DESTINATION \${OLLAMA_INSTALL_DIR} COMPONENT CUDA' "$OLLAMA_GIT_DIR"/CMakeLists.txt
+  gsed -i '/LIBRARY DESTINATION \${OLLAMA_INSTALL_DIR} COMPONENT Vulkan$/a\        FRAMEWORK DESTINATION \${OLLAMA_INSTALL_DIR} COMPONENT Vulkan' "$OLLAMA_GIT_DIR"/CMakeLists.txt
 }
 
 function build_cli() {
