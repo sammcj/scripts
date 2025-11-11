@@ -2,26 +2,34 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>Label</key>
-    <string>com.user.locate</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/Users/samm/bin/updatedb-macos.sh</string>
-    </array>
-    <key>StartCalendarInterval</key>
-    <array>
-        <dict>
-            <key>Weekday</key>
-            <integer>3</integer>
-            <key>Hour</key>
-            <integer>8</integer>
-            <key>Minute</key>
-            <integer>0</integer>
-        </dict>
-    </array>
-    <key>StandardErrorPath</key>
-    <string>/tmp/locate.err</string>
-    <key>StandardOutPath</key>
-    <string>/tmp/locate.out</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>LOCATE_PATH</key>
+		<string>/Users/samm/.locatedb</string>
+	</dict>
+	<key>Label</key>
+	<string>com.user.locate</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/samm/bin/updatedb-macos.sh</string>
+	</array>
+	<key>StandardErrorPath</key>
+	<string>/tmp/locate.err</string>
+	<key>StandardOutPath</key>
+	<string>/tmp/locate.out</string>
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict>
+			<key>Hour</key>
+			<integer>8</integer>
+			<key>Minute</key>
+			<integer>0</integer>
+			<key>Weekday</key>
+			<integer>3</integer>
+		</dict>
+	</array>
 </dict>
 </plist>
+
+
+<!-- sudo cp ~/git/sammcj/scripts/macos/updatedb-macos/com.user.locate.plist /Library/LaunchDaemons/com.user.updatedb.plist && sudo launchctl load /Library/LaunchDaemons/com.user.updatedb.plist -->
