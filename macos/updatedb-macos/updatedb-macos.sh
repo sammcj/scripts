@@ -30,6 +30,7 @@
      -path "*/.sha256" -o \
      -path "*/.sum" -o \
      -path "*/*.tmp" -o \
+     -path "*/*.log.*" -o \
      -path "*/*.swp" -o \
      -path "*/.vscode" -o \
      -path "*/*.lock" -o \
