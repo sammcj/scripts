@@ -40,6 +40,19 @@
  * 1. Select the text containing codeblocks you want to format
  * 2. Click Codeblock Formatting → Format Selected Codeblocks
  * 3. Currently this processes the whole document, but could be refined to only process selected codeblocks
+ *
+ * ## Debugging
+ *
+ * If codeblocks aren't being detected, check the logs:
+ * 1. Go to Extensions → Apps Script
+ * 2. Click "View" → "Logs" (or press Ctrl+Enter after running)
+ * 3. The logs will show:
+ *    - All paragraphs in your document
+ *    - Character codes for potential delimiters (standard ` is code 96)
+ *    - Which delimiters were matched
+ *
+ * The script detects codeblocks marked with three or more of the same quote-like character.
+ * It supports standard backticks (`) and various Unicode variants that Google Docs might use.
  */
 
 /**
@@ -95,15 +108,49 @@ function formatSelectedCodeblocks() {
 function isCodeblockDelimiter(text) {
   const trimmed = text.trim();
 
+  if (trimmed.length === 0) {
+    return false;
+  }
+
+  // Log character codes for the first 5 characters to help debug
+  if (trimmed.length >= 3) {
+    const charCodes = [];
+    for (let i = 0; i < Math.min(5, trimmed.length); i++) {
+      charCodes.push(trimmed.charCodeAt(i));
+    }
+    Logger.log('  First chars: "' + trimmed.substring(0, 5) + '" char codes: [' + charCodes.join(', ') + ']');
+  }
+
   // Check for ``` or ```language (e.g., ```javascript, ```python, etc.)
+  // Standard backtick is U+0060 (96)
   if (trimmed.startsWith('```')) {
+    Logger.log('  -> Matched standard backticks');
     return true;
   }
 
-  // Also check for possible variations with different backtick characters
-  // that Google Docs might use
-  if (trimmed.match(/^[`´]{3,}/)) {
+  // Check for various Unicode backtick-like characters that Google Docs might use
+  // Including: ` (U+0060), ´ (U+00B4), ʻ (U+02BB), ʼ (U+02BC), ˋ (U+02CB), ˊ (U+02CA), ' (U+2018), ' (U+2019)
+  const backtickPattern = /^[`´ʻʼˋˊ'']{3,}/;
+  if (trimmed.match(backtickPattern)) {
+    Logger.log('  -> Matched Unicode backtick variant');
     return true;
+  }
+
+  // Also check if first 3+ characters are all the same and could be a backtick
+  if (trimmed.length >= 3) {
+    const firstChar = trimmed.charAt(0);
+    const first3Same = trimmed.charAt(0) === trimmed.charAt(1) && trimmed.charAt(1) === trimmed.charAt(2);
+
+    // Check if it's any kind of quote-like character (char codes 96, 180, 700-730, 8216-8219)
+    const charCode = trimmed.charCodeAt(0);
+    const isQuoteLike = charCode === 96 || charCode === 180 ||
+                        (charCode >= 700 && charCode <= 730) ||
+                        (charCode >= 8216 && charCode <= 8219);
+
+    if (first3Same && isQuoteLike) {
+      Logger.log('  -> Matched 3+ identical quote-like characters (code: ' + charCode + ')');
+      return true;
+    }
   }
 
   return false;
@@ -119,16 +166,21 @@ function formatCodeblocksInBody(body) {
   let paragraphCount = 0;
   let codeblockCount = 0;
 
+  Logger.log('========================================');
+  Logger.log('Starting codeblock detection');
   Logger.log('Total paragraphs to process: ' + paragraphs.length);
+  Logger.log('========================================');
 
   for (let i = 0; i < paragraphs.length; i++) {
     const paragraph = paragraphs[i];
     const text = paragraph.getText();
     const trimmedText = text.trim();
 
-    // Log first few characters for debugging
-    if (trimmedText.length > 0) {
-      Logger.log('Paragraph ' + i + ': "' + trimmedText.substring(0, Math.min(20, trimmedText.length)) + '..." (length: ' + trimmedText.length + ')');
+    // Log ALL paragraphs, even empty ones
+    if (trimmedText.length === 0) {
+      Logger.log('Paragraph ' + i + ': <empty>');
+    } else {
+      Logger.log('Paragraph ' + i + ': "' + trimmedText.substring(0, Math.min(30, trimmedText.length)) + '..." (length: ' + trimmedText.length + ')');
     }
 
     // Check if this paragraph is a codeblock delimiter
@@ -160,7 +212,11 @@ function formatCodeblocksInBody(body) {
     }
   }
 
-  Logger.log('Formatting complete. Paragraphs: ' + paragraphCount + ', Codeblocks: ' + codeblockCount);
+  Logger.log('========================================');
+  Logger.log('Formatting complete!');
+  Logger.log('Codeblocks found: ' + codeblockCount);
+  Logger.log('Paragraphs formatted: ' + paragraphCount);
+  Logger.log('========================================');
 
   return {
     paragraphCount: paragraphCount,
