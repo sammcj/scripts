@@ -1,15 +1,45 @@
 /**
  * Google Docs Codeblock Formatter Script
  *
- * Install to a doc via: Extensions -> Apps Script -> Paste the following code into the code editor and save, then go back to your doc and refresh the page
- * Formats codeblocks (text between ``` markers) with:
- * - Single line spacing (1.0)
- * - No space before paragraph
- * - No space after paragraph
+ * ## Problem
  *
- * Options:
- * - Entire document
- * - Selected text only
+ * When you paste markdown content into Google Docs, codeblocks (text between ``` markers) often get formatted with:
+ * - Extra space before paragraphs
+ * - Extra space after paragraphs
+ * - 1.15x or 1.5x line spacing
+ *
+ * This wastes a lot of vertical space in your document.
+ *
+ * ## Solution
+ *
+ * This script finds all codeblocks in your document and applies compact formatting:
+ * - Single line spacing (1.0)
+ * - No space before paragraph (0pt)
+ * - No space after paragraph (0pt)
+ *
+ * ## Installation
+ *
+ * 1. Open your Google Doc
+ * 2. Go to Extensions → Apps Script
+ * 3. Delete any default code in the editor
+ * 4. Copy and paste the entire contents of format-codeblocks.js into the editor
+ * 5. Click the Save icon (💾) and give your project a name (e.g., "Codeblock Formatter")
+ * 6. Close the Apps Script tab and refresh your Google Doc
+ * 7. You should now see a new menu called "Codeblock Formatting" in the menu bar
+ *
+ * ## Usage
+ *
+ * ### Format All Codeblocks
+ *
+ * 1. Click Codeblock Formatting → Format All Codeblocks
+ * 2. The script will find all text between ``` markers and apply compact formatting
+ * 3. A dialog will show how many paragraphs were formatted
+ *
+ * ### Format Selected Codeblocks (Alternative)
+ *
+ * 1. Select the text containing codeblocks you want to format
+ * 2. Click Codeblock Formatting → Format Selected Codeblocks
+ * 3. Currently this processes the whole document, but could be refined to only process selected codeblocks
  */
 
 /**
