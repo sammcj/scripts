@@ -3,7 +3,7 @@
  *
  * ## Problem
  *
- * When you paste markdown content into Google Docs, codeblocks (text between ``` markers) often get formatted with:
+ * When you paste markdown content into Google Docs, codeblocks often get formatted with:
  * - Extra space before paragraphs
  * - Extra space after paragraphs
  * - 1.15x or 1.5x line spacing
@@ -12,10 +12,14 @@
  *
  * ## Solution
  *
- * This script finds all codeblocks in your document and applies compact formatting:
+ * This script detects codeblocks by their monospace font (Courier New, Consolas, etc.)
+ * and applies compact formatting:
  * - Single line spacing (1.0)
  * - No space before paragraph (0pt)
  * - No space after paragraph (0pt)
+ *
+ * Note: The script detects code by font, not by ``` markers, since Google Docs
+ * converts markdown delimiters to formatting when you paste.
  *
  * ## Installation
  *
@@ -32,7 +36,7 @@
  * ### Format All Codeblocks
  *
  * 1. Click Codeblock Formatting → Format All Codeblocks
- * 2. The script will find all text between ``` markers and apply compact formatting
+ * 2. The script will find all paragraphs using monospace fonts and apply compact formatting
  * 3. A dialog will show how many paragraphs were formatted
  *
  * ### Format Selected Codeblocks (Alternative)
@@ -48,11 +52,14 @@
  * 2. Click "View" → "Logs" (or press Ctrl+Enter after running)
  * 3. The logs will show:
  *    - All paragraphs in your document
- *    - Character codes for potential delimiters (standard ` is code 96)
- *    - Which delimiters were matched
+ *    - Font family for each paragraph
+ *    - Which paragraphs were detected as code
  *
- * The script detects codeblocks marked with three or more of the same quote-like character.
- * It supports standard backticks (`) and various Unicode variants that Google Docs might use.
+ * The script detects code by monospace fonts including:
+ * Courier New, Consolas, Monaco, Menlo, Source Code Pro, Roboto Mono, etc.
+ *
+ * If your code isn't being detected, it might be using a non-monospace font.
+ * Try manually changing the font to a monospace font in Google Docs first.
  */
 
 /**
@@ -65,7 +72,7 @@ function formatAllCodeblocks() {
   const result = formatCodeblocksInBody(body);
 
   if (result.codeblockCount === 0) {
-    DocumentApp.getUi().alert('No codeblocks found in document.\n\nCodeblocks should be marked with ``` on separate lines.\n\nTo debug: Go to Extensions → Apps Script → View → Logs to see what was detected.');
+    DocumentApp.getUi().alert('No codeblocks found in document.\n\nThe script detects code by monospace font (Courier New, Consolas, etc.).\n\nMake sure your code paragraphs use a monospace font.\n\nTo debug: Go to Extensions → Apps Script → View → Logs to see font details.');
     return;
   }
 
@@ -80,7 +87,7 @@ function formatSelectedCodeblocks() {
   const selection = doc.getSelection();
 
   if (!selection) {
-    DocumentApp.getUi().alert('Please select text containing codeblocks first.\n\nCodeblocks should be marked with ``` on separate lines.\n\nNote: Currently this function processes the whole document.');
+    DocumentApp.getUi().alert('Please select text containing codeblocks first.\n\nThe script detects code by monospace font.\n\nNote: Currently this function processes the whole document.');
     return;
   }
 
@@ -95,7 +102,7 @@ function formatSelectedCodeblocks() {
   const result = formatCodeblocksInBody(body);
 
   if (result.codeblockCount === 0) {
-    DocumentApp.getUi().alert('No codeblocks found in document.\n\nCodeblocks should be marked with ``` on separate lines.\n\nTo debug: Go to Extensions → Apps Script → View → Logs to see what was detected.');
+    DocumentApp.getUi().alert('No codeblocks found in document.\n\nThe script detects code by monospace font (Courier New, Consolas, etc.).\n\nMake sure your code paragraphs use a monospace font.\n\nTo debug: Go to Extensions → Apps Script → View → Logs to see font details.');
     return;
   }
 
@@ -103,62 +110,66 @@ function formatSelectedCodeblocks() {
 }
 
 /**
- * Checks if a line is a codeblock delimiter (``` or ```language)
+ * Checks if a paragraph is formatted as code (monospace font)
  */
-function isCodeblockDelimiter(text) {
-  const trimmed = text.trim();
+function isCodeParagraph(paragraph) {
+  try {
+    const text = paragraph.getText();
+    if (!text || text.trim().length === 0) {
+      return false;
+    }
 
-  if (trimmed.length === 0) {
+    // Get the font family of the paragraph
+    const textObj = paragraph.editAsText();
+    const fontFamily = textObj.getFontFamily(0);
+
+    Logger.log('  Font: "' + fontFamily + '"');
+
+    // Check if it's a monospace font (common code fonts)
+    const monospaceFonts = [
+      'Courier New',
+      'Courier',
+      'Consolas',
+      'Monaco',
+      'Menlo',
+      'Source Code Pro',
+      'Roboto Mono',
+      'Fira Code',
+      'JetBrains Mono',
+      'Anonymous Pro',
+      'Liberation Mono',
+      'Inconsolata',
+      'Ubuntu Mono',
+      'DejaVu Sans Mono',
+      'Lucida Console'
+    ];
+
+    if (fontFamily) {
+      const fontLower = fontFamily.toLowerCase();
+      for (let i = 0; i < monospaceFonts.length; i++) {
+        if (fontLower.indexOf(monospaceFonts[i].toLowerCase()) !== -1) {
+          Logger.log('  -> Matched monospace font: ' + fontFamily);
+          return true;
+        }
+      }
+
+      // Also check if "mono" appears in font name
+      if (fontLower.indexOf('mono') !== -1) {
+        Logger.log('  -> Matched "mono" in font name: ' + fontFamily);
+        return true;
+      }
+    }
+
+    return false;
+  } catch (e) {
+    Logger.log('  Error checking font: ' + e.message);
     return false;
   }
-
-  // Log character codes for the first 5 characters to help debug
-  if (trimmed.length >= 3) {
-    const charCodes = [];
-    for (let i = 0; i < Math.min(5, trimmed.length); i++) {
-      charCodes.push(trimmed.charCodeAt(i));
-    }
-    Logger.log('  First chars: "' + trimmed.substring(0, 5) + '" char codes: [' + charCodes.join(', ') + ']');
-  }
-
-  // Check for ``` or ```language (e.g., ```javascript, ```python, etc.)
-  // Standard backtick is U+0060 (96)
-  if (trimmed.startsWith('```')) {
-    Logger.log('  -> Matched standard backticks');
-    return true;
-  }
-
-  // Check for various Unicode backtick-like characters that Google Docs might use
-  // Including: ` (U+0060), ´ (U+00B4), ʻ (U+02BB), ʼ (U+02BC), ˋ (U+02CB), ˊ (U+02CA), ' (U+2018), ' (U+2019)
-  const backtickPattern = /^[`´ʻʼˋˊ'']{3,}/;
-  if (trimmed.match(backtickPattern)) {
-    Logger.log('  -> Matched Unicode backtick variant');
-    return true;
-  }
-
-  // Also check if first 3+ characters are all the same and could be a backtick
-  if (trimmed.length >= 3) {
-    const firstChar = trimmed.charAt(0);
-    const first3Same = trimmed.charAt(0) === trimmed.charAt(1) && trimmed.charAt(1) === trimmed.charAt(2);
-
-    // Check if it's any kind of quote-like character (char codes 96, 180, 700-730, 8216-8219)
-    const charCode = trimmed.charCodeAt(0);
-    const isQuoteLike = charCode === 96 || charCode === 180 ||
-                        (charCode >= 700 && charCode <= 730) ||
-                        (charCode >= 8216 && charCode <= 8219);
-
-    if (first3Same && isQuoteLike) {
-      Logger.log('  -> Matched 3+ identical quote-like characters (code: ' + charCode + ')');
-      return true;
-    }
-  }
-
-  return false;
 }
 
 /**
  * Formats codeblocks in the document body
- * Iterates through paragraphs and tracks when inside a codeblock
+ * Detects code by monospace font formatting
  */
 function formatCodeblocksInBody(body) {
   const paragraphs = body.getParagraphs();
@@ -167,7 +178,7 @@ function formatCodeblocksInBody(body) {
   let codeblockCount = 0;
 
   Logger.log('========================================');
-  Logger.log('Starting codeblock detection');
+  Logger.log('Starting codeblock detection (by font)');
   Logger.log('Total paragraphs to process: ' + paragraphs.length);
   Logger.log('========================================');
 
@@ -176,38 +187,37 @@ function formatCodeblocksInBody(body) {
     const text = paragraph.getText();
     const trimmedText = text.trim();
 
-    // Log ALL paragraphs, even empty ones
+    // Log paragraph info
     if (trimmedText.length === 0) {
       Logger.log('Paragraph ' + i + ': <empty>');
     } else {
       Logger.log('Paragraph ' + i + ': "' + trimmedText.substring(0, Math.min(30, trimmedText.length)) + '..." (length: ' + trimmedText.length + ')');
     }
 
-    // Check if this paragraph is a codeblock delimiter
-    if (isCodeblockDelimiter(text)) {
-      Logger.log('Found codeblock delimiter at paragraph ' + i + ': "' + trimmedText + '"');
+    // Check if this paragraph uses a monospace font (is code)
+    const isCode = isCodeParagraph(paragraph);
 
+    if (isCode) {
       if (!inCodeblock) {
-        // Start of codeblock
+        // Start of a new codeblock
         inCodeblock = true;
         codeblockCount++;
-        Logger.log('Starting codeblock #' + codeblockCount);
-      } else {
-        // End of codeblock
-        inCodeblock = false;
-        Logger.log('Ending codeblock');
+        Logger.log('  >>> Starting codeblock #' + codeblockCount);
       }
-      continue; // Don't format the delimiter lines themselves
-    }
 
-    // If we're inside a codeblock, format this paragraph
-    if (inCodeblock) {
+      // Format this code paragraph
       try {
         formatCodeblockParagraph(paragraph);
         paragraphCount++;
-        Logger.log('Formatted paragraph ' + i + ' inside codeblock');
+        Logger.log('  >>> Formatted paragraph ' + i);
       } catch (e) {
-        Logger.log('Error formatting paragraph ' + i + ': ' + e.message);
+        Logger.log('  Error formatting paragraph ' + i + ': ' + e.message);
+      }
+    } else {
+      // Not code - end codeblock if we were in one
+      if (inCodeblock) {
+        inCodeblock = false;
+        Logger.log('  >>> Ending codeblock');
       }
     }
   }
