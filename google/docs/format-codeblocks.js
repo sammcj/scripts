@@ -52,7 +52,7 @@ function formatAllCodeblocks() {
   const result = formatCodeblocksInBody(body);
 
   if (result.codeblockCount === 0) {
-    DocumentApp.getUi().alert('No codeblocks found in document.\n\nCodeblocks should be marked with ``` on separate lines.');
+    DocumentApp.getUi().alert('No codeblocks found in document.\n\nCodeblocks should be marked with ``` on separate lines.\n\nTo debug: Go to Extensions → Apps Script → View → Logs to see what was detected.');
     return;
   }
 
@@ -67,7 +67,7 @@ function formatSelectedCodeblocks() {
   const selection = doc.getSelection();
 
   if (!selection) {
-    DocumentApp.getUi().alert('Please select text containing codeblocks first.\n\nCodeblocks should be marked with ``` on separate lines.');
+    DocumentApp.getUi().alert('Please select text containing codeblocks first.\n\nCodeblocks should be marked with ``` on separate lines.\n\nNote: Currently this function processes the whole document.');
     return;
   }
 
@@ -82,11 +82,31 @@ function formatSelectedCodeblocks() {
   const result = formatCodeblocksInBody(body);
 
   if (result.codeblockCount === 0) {
-    DocumentApp.getUi().alert('No codeblocks found in document.\n\nCodeblocks should be marked with ``` on separate lines.');
+    DocumentApp.getUi().alert('No codeblocks found in document.\n\nCodeblocks should be marked with ``` on separate lines.\n\nTo debug: Go to Extensions → Apps Script → View → Logs to see what was detected.');
     return;
   }
 
   showResult(result.paragraphCount, result.codeblockCount);
+}
+
+/**
+ * Checks if a line is a codeblock delimiter (``` or ```language)
+ */
+function isCodeblockDelimiter(text) {
+  const trimmed = text.trim();
+
+  // Check for ``` or ```language (e.g., ```javascript, ```python, etc.)
+  if (trimmed.startsWith('```')) {
+    return true;
+  }
+
+  // Also check for possible variations with different backtick characters
+  // that Google Docs might use
+  if (trimmed.match(/^[`´]{3,}/)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -99,19 +119,31 @@ function formatCodeblocksInBody(body) {
   let paragraphCount = 0;
   let codeblockCount = 0;
 
+  Logger.log('Total paragraphs to process: ' + paragraphs.length);
+
   for (let i = 0; i < paragraphs.length; i++) {
     const paragraph = paragraphs[i];
-    const text = paragraph.getText().trim();
+    const text = paragraph.getText();
+    const trimmedText = text.trim();
+
+    // Log first few characters for debugging
+    if (trimmedText.length > 0) {
+      Logger.log('Paragraph ' + i + ': "' + trimmedText.substring(0, Math.min(20, trimmedText.length)) + '..." (length: ' + trimmedText.length + ')');
+    }
 
     // Check if this paragraph is a codeblock delimiter
-    if (text.startsWith('```')) {
+    if (isCodeblockDelimiter(text)) {
+      Logger.log('Found codeblock delimiter at paragraph ' + i + ': "' + trimmedText + '"');
+
       if (!inCodeblock) {
         // Start of codeblock
         inCodeblock = true;
         codeblockCount++;
+        Logger.log('Starting codeblock #' + codeblockCount);
       } else {
         // End of codeblock
         inCodeblock = false;
+        Logger.log('Ending codeblock');
       }
       continue; // Don't format the delimiter lines themselves
     }
@@ -121,11 +153,14 @@ function formatCodeblocksInBody(body) {
       try {
         formatCodeblockParagraph(paragraph);
         paragraphCount++;
+        Logger.log('Formatted paragraph ' + i + ' inside codeblock');
       } catch (e) {
-        Logger.log('Error formatting paragraph: ' + e.message);
+        Logger.log('Error formatting paragraph ' + i + ': ' + e.message);
       }
     }
   }
+
+  Logger.log('Formatting complete. Paragraphs: ' + paragraphCount + ', Codeblocks: ' + codeblockCount);
 
   return {
     paragraphCount: paragraphCount,
