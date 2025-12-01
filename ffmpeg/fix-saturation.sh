@@ -20,7 +20,10 @@ process_file() {
   local file="$1"
   local gpu_id="$2"
   local output="${file%.mkv}-fixed.mkv"
-  local logfile="gpu${gpu_id}-$(date +%s).log"
+  local backup="${file%.mkv}-pre-processing.mkv"
+  local logfile
+  logfile="gpu${gpu_id}-$(date +%s).log"
+
 
   echo "[GPU $gpu_id] Processing: $file" | tee -a "$logfile"
 
@@ -42,7 +45,7 @@ process_file() {
 
   # Process with NVIDIA hardware acceleration on specific GPU
   # Redirect output to log file to avoid interleaving
-  ffmpeg -hwaccel cuda -hwaccel_device $gpu_id -i "$file" \
+  if ffmpeg -hwaccel cuda -hwaccel_device $gpu_id -i "$file" \
     -vf "eq=saturation=$SATURATION:gamma_r=$GAMMA_R:gamma_b=$GAMMA_B" \
     -c:v h264_nvenc -gpu $gpu_id -preset p7 \
     -b:v "${bitrate_kbps}k" \
@@ -51,10 +54,23 @@ process_file() {
     -profile:v high -level 4.0 \
     -c:a copy -c:s copy \
     -map 0 \
-    "$output" 2>&1 | grep -E "frame=|speed=" | tee -a "$logfile" || true
+    "$output" 2>&1 | grep -E "frame=|speed=" | tee -a "$logfile"; then
 
-  echo "[GPU $gpu_id] ✓ Completed: $output" | tee -a "$logfile"
-  echo "[GPU $gpu_id]   Original: $(du -h "$file" | cut -f1) → Fixed: $(du -h "$output" | cut -f1)" | tee -a "$logfile"
+    # Processing successful - rename files
+    echo "[GPU $gpu_id] ✓ Encoding completed successfully" | tee -a "$logfile"
+    echo "[GPU $gpu_id]   Renaming original to: $backup" | tee -a "$logfile"
+    mv "$file" "$backup"
+
+    echo "[GPU $gpu_id]   Renaming processed to: $file" | tee -a "$logfile"
+    mv "$output" "$file"
+
+    echo "[GPU $gpu_id] ✓ Completed: $file" | tee -a "$logfile"
+    echo "[GPU $gpu_id]   Original (now backup): $(du -h "$backup" | cut -f1)" | tee -a "$logfile"
+    echo "[GPU $gpu_id]   Processed (now active): $(du -h "$file" | cut -f1)" | tee -a "$logfile"
+  else
+    echo "[GPU $gpu_id] ✗ Error processing $file - keeping original file unchanged" | tee -a "$logfile"
+  fi
+
   rm -f "$logfile"
   echo ""
 }
@@ -64,9 +80,10 @@ files_to_process=()
 for file in *.mkv; do
   [[ -e "$file" ]] || continue
 
-  # Skip test files, samples, and already processed files
+  # Skip test files, samples, backup files and already processed files
   if [[ "$file" == test-sat-*.mkv ]] || \
      [[ "$file" == *-fixed.mkv ]] || \
+     [[ "$file" == *-pre-processing.mkv ]] || \
      [[ "$file" == sample.mkv ]] || \
      [[ "$file" == preview.mkv ]]; then
     continue
@@ -120,3 +137,6 @@ echo "Batch processing complete!"
 echo "Files processed: $PROCESSED_COUNT"
 echo "Files skipped: $SKIPPED_COUNT"
 echo "================================"
+echo ""
+echo "Original files renamed with -pre-processing suffix"
+echo "Processed files now have the original filenames"
