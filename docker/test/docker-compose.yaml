@@ -1,0 +1,62 @@
+# Test compose file for compose-tree
+# Lightweight busybox containers with dependency chains for testing
+
+services:
+  # Tier 0: No dependencies (root services)
+  database:
+    image: busybox:latest
+    container_name: test-database
+    command: sleep infinity
+    environment:
+      DB_PORT: "5432"
+      DB_NAME: "testdb"
+
+  cache:
+    image: busybox:latest
+    container_name: test-cache
+    command: sleep infinity
+    environment:
+      CACHE_SIZE: "256"
+
+  # Tier 1: Single dependency
+  api:
+    image: busybox:latest
+    container_name: test-api
+    command: sleep infinity
+    depends_on:
+      - database
+    environment:
+      API_PORT: "8080"
+      DATABASE_URL: "postgres://database:5432/testdb"
+
+  # Tier 2: Multiple dependencies
+  worker:
+    image: busybox:latest
+    container_name: test-worker
+    command: sleep infinity
+    depends_on:
+      - database
+      - cache
+    environment:
+      WORKER_THREADS: "4"
+
+  # Tier 3: Chain dependency (depends on Tier 1 service)
+  frontend:
+    image: busybox:latest
+    container_name: test-frontend
+    command: sleep infinity
+    depends_on:
+      - api
+    environment:
+      API_URL: "http://api:8080"
+
+  # Tier 4: Deep chain with multiple paths
+  monitor:
+    image: busybox:latest
+    container_name: test-monitor
+    command: sleep infinity
+    depends_on:
+      - frontend
+      - worker
+    environment:
+      MONITOR_INTERVAL: "30"
