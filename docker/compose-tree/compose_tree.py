@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -88,6 +89,255 @@ def run_command(cmd: list[str], cwd: Path | None = None) -> tuple[int, str, str]
         return 1, "", "Command timed out"
     except FileNotFoundError:
         return 1, "", f"Command not found: {cmd[0]}"
+
+
+def parse_env_file(env_path: Path) -> dict[str, str]:
+    """Parse an env file and return variable names defined in it."""
+    variables = {}
+    if not env_path.exists():
+        return variables
+
+    try:
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" in line:
+                    key, _, _ = line.partition("=")
+                    key = key.strip()
+                    if key:
+                        variables[key] = str(env_path)
+    except (OSError, IOError):
+        pass
+    return variables
+
+
+def get_service_env_sources(
+    compose_file: Path, project_dir: Path
+) -> dict[str, dict[str, str]]:
+    """Parse compose file(s) to find env_file references for each service.
+
+    Uses regex-based parsing to handle YAML anchors that standard parsers can't.
+    Returns: {service_name: {VAR_NAME: "source_file_path", ...}, ...}
+    """
+    service_sources: dict[str, dict[str, str]] = {}
+    processed_files: set[Path] = set()
+    # Track which services are defined in which files
+    file_services: dict[Path, list[str]] = {}
+    # Track env_files associated with YAML anchors (x-common patterns)
+    anchor_env_files: dict[str, list[Path]] = {}
+
+    def extract_services_from_file(file_path: Path) -> list[str]:
+        """Extract service names from a compose file."""
+        services = []
+        if not file_path.exists():
+            return services
+        try:
+            content = file_path.read_text()
+        except OSError:
+            return services
+
+        for line in content.split("\n"):
+            stripped = line.lstrip()
+            indent = len(line) - len(stripped)
+            if indent == 2 and stripped and not stripped.startswith("#"):
+                svc_match = re.match(r"^&?\w*\s*(\w[\w-]*):\s*$", stripped)
+                if svc_match:
+                    services.append(svc_match.group(1))
+        return services
+
+    def extract_env_files_from_compose(
+        file_path: Path, base_dir: Path, inherited_env_files: list[Path] | None = None
+    ) -> None:
+        """Extract env_file references from a compose file using regex."""
+        if not file_path.exists() or file_path in processed_files:
+            return
+        processed_files.add(file_path)
+
+        if inherited_env_files is None:
+            inherited_env_files = []
+
+        try:
+            content = file_path.read_text()
+        except OSError:
+            return
+
+        # Find include directives with their env_files
+        # Match include blocks like:
+        #   - path: ./docker-compose-xxx.yaml
+        #     env_file:
+        #       - .env
+        lines = content.split("\n")
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            stripped = line.lstrip()
+            indent = len(line) - len(stripped)
+
+            # Look for "- path:" in include section
+            path_match = re.match(r"^-?\s*path:\s*([^\s#]+)", stripped)
+            if path_match:
+                inc_path = path_match.group(1).strip("'\"")
+                inc_full = (base_dir / inc_path).resolve()
+
+                # Look for env_file in the following lines
+                inc_env_files: list[Path] = []
+                j = i + 1
+                while j < len(lines):
+                    next_line = lines[j]
+                    next_stripped = next_line.lstrip()
+                    next_indent = len(next_line) - len(next_stripped)
+
+                    # If we hit another "- path:" or less indented, stop
+                    if next_stripped.startswith("- path:") or (
+                        next_indent <= indent and next_stripped and not next_stripped.startswith("#")
+                    ):
+                        break
+
+                    if "env_file:" in next_stripped:
+                        # Check for single-line env_file
+                        single = re.match(r"env_file:\s*([^\s#]+)", next_stripped)
+                        if single:
+                            ef = single.group(1).strip("'\"")
+                            inc_env_files.append((base_dir / ef).resolve())
+                        j += 1
+                        continue
+
+                    # Match env_file list entry
+                    ef_match = re.match(r"^-\s*([^\s#]+)", next_stripped)
+                    if ef_match and next_indent > indent:
+                        ef = ef_match.group(1).strip("'\"")
+                        inc_env_files.append((base_dir / ef).resolve())
+                    j += 1
+
+                # Get services defined in included file
+                inc_services = extract_services_from_file(inc_full)
+                file_services[inc_full] = inc_services
+
+                # Apply inherited env_files to services in included file
+                all_inherited = inherited_env_files + inc_env_files
+                for svc in inc_services:
+                    if svc not in service_sources:
+                        service_sources[svc] = {}
+                    for ef_path in all_inherited:
+                        env_vars = parse_env_file(ef_path)
+                        for var_name in env_vars:
+                            # Don't override service-specific env_file
+                            if var_name not in service_sources[svc]:
+                                service_sources[svc][var_name] = str(ef_path)
+
+                # Recursively process included file
+                if inc_full.exists():
+                    extract_env_files_from_compose(inc_full, inc_full.parent, all_inherited)
+
+            i += 1
+
+        # First pass: extract x-anchor definitions with their env_files
+        current_anchor = None
+        in_anchor_env_file = False
+        anchor_env_indent = 0
+
+        for line in lines:
+            stripped = line.lstrip()
+            indent = len(line) - len(stripped)
+
+            # Match x-* anchor definitions: "x-ai-common: &ai-common"
+            if indent == 0 and stripped.startswith("x-"):
+                anchor_match = re.match(r"x-[\w-]+:\s*&([\w-]+)", stripped)
+                if anchor_match:
+                    current_anchor = anchor_match.group(1)
+                    anchor_env_files[current_anchor] = []
+                    in_anchor_env_file = False
+                continue
+
+            # Look for env_file in anchor definition
+            if current_anchor and "env_file:" in stripped and not stripped.startswith("#"):
+                in_anchor_env_file = True
+                anchor_env_indent = indent
+                single_match = re.match(r"env_file:\s*([^\s#]+)", stripped)
+                if single_match:
+                    ef_path = single_match.group(1).strip("'\"")
+                    anchor_env_files[current_anchor].append((base_dir / ef_path).resolve())
+                    in_anchor_env_file = False
+                continue
+
+            # Collect anchor env_file list entries
+            if in_anchor_env_file and current_anchor:
+                if indent <= anchor_env_indent and stripped and not stripped.startswith("-"):
+                    in_anchor_env_file = False
+                    current_anchor = None
+                    continue
+                ef_match = re.match(r"^-\s*([^\s#]+)", stripped)
+                if ef_match:
+                    ef_path = ef_match.group(1).strip("'\"")
+                    anchor_env_files[current_anchor].append((base_dir / ef_path).resolve())
+
+            # End of anchor block (new top-level key)
+            if indent == 0 and stripped and not stripped.startswith("#") and not stripped.startswith("x-"):
+                current_anchor = None
+                in_anchor_env_file = False
+
+        # Second pass: extract service blocks and their env_file references
+        current_service = None
+        in_env_file_block = False
+        env_file_indent = 0
+
+        for line in lines:
+            stripped = line.lstrip()
+            indent = len(line) - len(stripped)
+
+            # Detect service definition
+            if indent == 2 and stripped and not stripped.startswith("#"):
+                svc_match = re.match(r"^&?\w*\s*(\w[\w-]*):\s*$", stripped)
+                if svc_match:
+                    current_service = svc_match.group(1)
+                    if current_service not in service_sources:
+                        service_sources[current_service] = {}
+                    in_env_file_block = False
+
+            # Check for anchor references: "<<: [*ai-common, *other]"
+            if current_service and "<<:" in stripped:
+                anchor_refs = re.findall(r"\*(\w[\w-]*)", stripped)
+                for anchor_name in anchor_refs:
+                    if anchor_name in anchor_env_files:
+                        for ef_path in anchor_env_files[anchor_name]:
+                            env_vars = parse_env_file(ef_path)
+                            for var_name in env_vars:
+                                if var_name not in service_sources[current_service]:
+                                    service_sources[current_service][var_name] = str(ef_path)
+
+            # Detect env_file directive
+            if current_service and "env_file:" in stripped and not stripped.startswith("#"):
+                in_env_file_block = True
+                env_file_indent = indent
+                single_match = re.match(r"env_file:\s*([^\s#]+)", stripped)
+                if single_match:
+                    ef_path = single_match.group(1).strip("'\"")
+                    ef_full = (base_dir / ef_path).resolve()
+                    env_vars = parse_env_file(ef_full)
+                    for var_name in env_vars:
+                        service_sources[current_service][var_name] = str(ef_full)
+                    in_env_file_block = False
+                continue
+
+            # Collect env_file list entries
+            if in_env_file_block and current_service:
+                if indent <= env_file_indent and stripped and not stripped.startswith("-"):
+                    in_env_file_block = False
+                    continue
+                ef_match = re.match(r"^-\s*([^\s#]+)", stripped)
+                if ef_match:
+                    ef_path = ef_match.group(1).strip("'\"")
+                    ef_full = (base_dir / ef_path).resolve()
+                    env_vars = parse_env_file(ef_full)
+                    for var_name in env_vars:
+                        service_sources[current_service][var_name] = str(ef_full)
+
+    # Start processing from the main compose file
+    extract_env_files_from_compose(compose_file, project_dir)
+
+    return service_sources
 
 
 def get_compose_config(
@@ -242,10 +492,28 @@ def check_image_changed(
     return None
 
 
+def format_env_source(source: str, project_dir: Path) -> str:
+    """Format an env source for display, making paths relative and concise."""
+    if source == "compose:inline":
+        return "inline"
+    if source == "shell":
+        return "shell env"
+    # Try to make path relative
+    try:
+        source_path = Path(source)
+        rel_path = source_path.relative_to(project_dir)
+        return str(rel_path)
+    except (ValueError, TypeError):
+        # Not relative to project dir, use basename
+        return Path(source).name
+
+
 def check_config_changed(
     service_name: str,
     compose_config: dict[str, Any],
     container_info: dict[str, Any] | None,
+    env_sources: dict[str, str] | None = None,
+    project_dir: Path | None = None,
 ) -> RestartReason | None:
     """Check if the compose config differs from the running container.
 
@@ -255,6 +523,11 @@ def check_config_changed(
     """
     if not container_info:
         return None
+
+    if env_sources is None:
+        env_sources = {}
+    if project_dir is None:
+        project_dir = Path.cwd()
 
     service_cfg = compose_config.get("services", {}).get(service_name, {})
     container_cfg = container_info.get("Config", {})
@@ -266,11 +539,29 @@ def check_config_changed(
     desired_env = normalise_env_list(service_cfg.get("environment"))
     current_env = normalise_env_list(container_cfg.get("Env", []))
 
-    for key, desired_val in desired_env.items():
+    env_diffs = []
+    for key, desired_val in sorted(desired_env.items()):
         current_val = current_env.get(key)
-        if current_val is None or current_val != desired_val:
-            changed_fields.append("environment")
-            break
+        # Get source info
+        source = env_sources.get(key, "unknown")
+        source_display = format_env_source(source, project_dir)
+
+        if current_val is None:
+            # New variable
+            display_val = desired_val if len(desired_val) <= 50 else f"{desired_val[:50]}..."
+            env_diffs.append(
+                f"{Colour.GREEN}+ {key}={display_val}{Colour.RESET} {Colour.DIM}({source_display}){Colour.RESET}"
+            )
+        elif current_val != desired_val:
+            # Changed variable - show diff with source
+            cur_display = current_val if len(current_val) <= 30 else f"{current_val[:30]}..."
+            new_display = desired_val if len(desired_val) <= 30 else f"{desired_val[:30]}..."
+            env_diffs.append(
+                f"{Colour.YELLOW}~ {key}: {Colour.RED}{cur_display}{Colour.RESET} → "
+                f"{Colour.GREEN}{new_display}{Colour.RESET} {Colour.DIM}({source_display}){Colour.RESET}"
+            )
+    if env_diffs:
+        changed_fields.append(("environment", env_diffs))
 
     # Check command - only if explicitly set in compose
     desired_cmd = service_cfg.get("command")
@@ -649,6 +940,9 @@ def analyse_services(
     if not config:
         return {}
 
+    # Get env sources for all services
+    all_env_sources = get_service_env_sources(compose_file, project_dir)
+
     services = config.get("services", {})
     ps_output = get_compose_ps(compose_file, project_dir)
 
@@ -712,7 +1006,10 @@ def analyse_services(
                 status.reasons.append(image_reason)
 
             # Check config
-            config_reason = check_config_changed(service_name, config, container_info)
+            svc_env_sources = all_env_sources.get(service_name, {})
+            config_reason = check_config_changed(
+                service_name, config, container_info, svc_env_sources, project_dir
+            )
             if config_reason:
                 status.needs_restart = True
                 status.reasons.append(config_reason)
