@@ -3,9 +3,10 @@ set -euo pipefail
 
 # Back up Creality K2 Pro settings to a local timestamped snapshot.
 # Grabs Klipper/Moonraker config + Creality userdata (CFS slot assignments,
-# calibration, version); skips logs and sliced gcodes. Unchanged files are
-# hardlinked against the previous snapshot, so repeat runs are cheap on disk.
-# Safe to run any time.
+# calibration, version); skips logs, sliced gcodes and timelapse video (the
+# videos are ~200MB and are not settings). Unchanged files are hardlinked
+# against the previous snapshot, so repeat runs are cheap on disk.
+# Read-only on the printer, so safe to run any time, including mid-print.
 
 HOST="root@192.168.69.100"
 DEST_BASE="${HOME}/printer-backups"
@@ -69,7 +70,7 @@ backup_tree() {
 }
 
 backup_tree "/mnt/UDISK/printer_data/"      "printer_data"      "logs/" "gcodes/"
-backup_tree "/mnt/UDISK/creality/userdata/" "creality-userdata" "log/"
+backup_tree "/mnt/UDISK/creality/userdata/" "creality-userdata" "log/" "delay_image/"
 
 # Prune old snapshots (newest N kept, including the one just made).
 if (( KEEP > 0 )); then
